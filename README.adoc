@@ -1,0 +1,6 @@
+== Purpose
+
+Tebako is an executable packager. It packages a set of files into a DwarFS file
+system for read-only purposes.
+
+This project contains definitions of docker containers with preinstalled Tebako packaging environment.
