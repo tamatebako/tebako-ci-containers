@@ -82,19 +82,11 @@ jobs:
           username: tamatebako
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        with:
-          context: .
-          file: ./${{ matrix.container }}.Dockerfile
-          push: ${{ contains(github.ref, 'refs/tags/v') }}
-          tags: ghcr.io/tamatebako/tebako-${{ matrix.container }}
-          labels: |
-            latest
-            "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+        # docker/build-push-action lack Windows support
+        # https://github.com/docker/setup-buildx-action/issues/292
+        # https://github.com/moby/buildkit/issues/616
+      - name: Docker build
+        run: docker build -f ${{ matrix.container }}.Dockerfile -t ghcr.io/tamatebako/tebako-${{ matrix.container }} .
 
       - name: Purge old versions
         if: contains(github.ref, 'refs/tags/v')
