@@ -31,7 +31,7 @@ ENV ARCH=x64
 
 RUN apt-get -y update && \
     apt-get -y install sudo wget git make pkg-config clang-12 clang++-12      \
-    binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev              \
+    autoconf binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev     \
     libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev  \
     libboost-filesystem-dev libboost-program-options-dev libboost-system-dev  \
     libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev       \
