@@ -25,6 +25,7 @@ jobs:
       matrix:
         container:
           - 'ubuntu-20.04'
+          - 'alpine-3.17'
 
     steps:
       - name: Checkout
