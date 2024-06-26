@@ -24,7 +24,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # Use the base image with Windows Server Core
-FROM mcr.microsoft.com/windows/servercore:ltsc2022
+FROM mcr.microsoft.com/windows/servercore:ltsc202
 
 ARG RUBY_INSTALLER_VERSION=3.1.6-1
 ADD https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-${RUBY_INSTALLER_VERSION}/rubyinstaller-${RUBY_INSTALLER_VERSION}-x64.exe C:\\temp\\rubyinstaller-devkit.exe
