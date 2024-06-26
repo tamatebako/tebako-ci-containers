@@ -23,16 +23,39 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Use the base image with Windows Server Core
-FROM mcr.microsoft.com/windows/servercore:ltsc2022
+FROM microsoft/windowsservercore
+# FROM microsoft/nanoserver
 
-ARG RUBY_INSTALLER_VERSION=3.1.6-1
-ADD https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-${RUBY_INSTALLER_VERSION}/rubyinstaller-${RUBY_INSTALLER_VERSION}-x64.exe C:\\temp\\rubyinstaller-devkit.exe
+# Download base ruby
+RUN powershell \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    Invoke-WebRequest https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-2.4.6-1/rubyinstaller-devkit-2.4.6-1-x64.exe -Outfile rubyinstaller.exe
+# Download git
+RUN powershell \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    Invoke-WebRequest https://github.com/git-for-windows/git/releases/download/v2.20.1.windows.1/Git-2.20.1-64-bit.exe -Outfile git-installer.exe
+# Download Inno Setup    
+RUN powershell \
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+    Invoke-WebRequest http://www.jrsoftware.org/download.php/is.exe -Outfile inno-setup.exe
+    
+# Install base ruby and initialize Devkit
+RUN (cmd /c rubyinstaller.exe /verysilent /log=install.log) || (powershell get-content c:/install.log)
+RUN powershell $env:PATH = [Environment]::GetEnvironmentVariable('PATH','Machine'); \
+    $env:RUBYOPT = [Environment]::GetEnvironmentVariable('RUBYOPT','Machine')
+RUN ruby --version
+RUN ridk install 1
 
-RUN C:\\temp\\rubyinstaller-devkit.exe /silent /dir=C:\\Ruby /tasks="modpath"
-RUN setx path "%path%;C:\\Ruby\\bin"
-RUN ridk enable ucrt64
+# Install git
+RUN cmd /c git-installer.exe /verysilent
+RUN git --version
 
+# Install Inno Setup
+RUN cmd /c inno-setup.exe /verysilent /allusers
+RUN powershell [Environment]::SetEnvironmentVariable('PATH', $env:PATH + ';c:/Program Files (x86)/Inno Setup 6', 'Machine')
+RUN iscc --version || (exit 0)
+
+RUN ridk enable
 # Set DevKit bash as the default shell
 SHELL ["C:\\Ruby\\msys64\\usr\\bin\\bash.exe", "-l", "-c"]
 
