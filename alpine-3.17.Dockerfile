@@ -46,11 +46,12 @@ ENV CXX=clang++
 RUN gem install tebako
 
 ENV HOME=/home/tebako
-RUN adduser --disabled-password --gecos "" --home $HOME tebako && \
-    printf "\ntebako\tALL=(ALL)\tNOPASSWD:\tALL" > /etc/sudoers.d/tebako
+# https://github.com/actions/checkout/issues/1014
+# RUN adduser --disabled-password --gecos "" --home $HOME tebako && \
+#    printf "\ntebako\tALL=(ALL)\tNOPASSWD:\tALL" > /etc/sudoers.d/tebako
+# USER tebako
 
 COPY test $HOME/test
-USER tebako
 WORKDIR $HOME
 
 # Create packaging environment for Ruby 3.1.5, 3.2.4
