@@ -26,6 +26,7 @@ jobs:
         container:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
+          - 'windows-2022'
 
     steps:
       - name: Checkout
