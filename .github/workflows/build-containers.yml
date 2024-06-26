@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-containers:
+  build-linux-containers:
     name: ${{ matrix.container }}
     runs-on: ubuntu-latest
     permissions:
@@ -53,6 +53,45 @@ jobs:
         if: contains(github.ref, 'refs/tags/v')
         continue-on-error: true
         uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'tebako-${{ matrix.container }}'
+          package-type: 'container'
+          min-versions-to-keep: 1
+          delete-only-untagged-versions: 'true'
+
+  build-windows-containers:
+    name: ${{ matrix.container }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        container:
+          - 'windows-2022'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: tamatebako
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+        # docker/build-push-action lack Windows support
+        # https://github.com/docker/setup-buildx-action/issues/292
+        # https://github.com/moby/buildkit/issues/616
+      - name: Docker build
+        run: docker build -f ${{ matrix.container }}.Dockerfile -t ghcr.io/tamatebako/tebako-${{ matrix.container }} .
+
+      - name: Purge old versions
+        if: contains(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/delete-package-versions@v4
         with:
           package-name: 'tebako-${{ matrix.container }}'
           package-type: 'container'
