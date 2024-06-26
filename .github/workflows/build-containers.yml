@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-containers:
+  build-linux-containers:
     name: ${{ matrix.container }}
     runs-on: ubuntu-latest
     permissions:
@@ -26,6 +26,49 @@ jobs:
         container:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: tamatebako
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          file: ./${{ matrix.container }}.Dockerfile
+          push: ${{ contains(github.ref, 'refs/tags/v') }}
+          tags: ghcr.io/tamatebako/tebako-${{ matrix.container }}
+          labels: |
+            latest
+            "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+
+      - name: Purge old versions
+        if: contains(github.ref, 'refs/tags/v')
+        continue-on-error: true
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: 'tebako-${{ matrix.container }}'
+          package-type: 'container'
+          min-versions-to-keep: 1
+          delete-only-untagged-versions: 'true'
+
+  build-windows-containers:
+    name: ${{ matrix.container }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        container:
           - 'windows-2022'
 
     steps:
