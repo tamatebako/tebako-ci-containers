@@ -47,23 +47,23 @@ COPY tools /opt/tools
 RUN /opt/tools/tools.sh install_cmake && \
     /opt/tools/tools.sh install_ruby
 
-RUN gem install tebako
-
-ENV HOME=/home/tebako
 # https://github.com/actions/checkout/issues/1014
 # RUN adduser --disabled-password --gecos "" --home $HOME tebako && \
 #    printf "\ntebako\tALL=(ALL)\tNOPASSWD:\tALL" > /etc/sudoers.d/tebako
 # USER tebako
+# ENV HOME=/home/tebako
 
-COPY test $HOME/test
-WORKDIR $HOME
+# So we are running as root, HOME=/root, tebako prefix (default) /root/.tebako
 
-# Create packaging environment for Ruby 3.1.5, 3.2.4
+COPY test /root/test
+
+# Create packaging environment for Ruby 3.1.6, 3.2.4
 # Test and "warm up" since initialization is fully finished after the first packaging
-RUN tebako setup -p .tebako -R 3.1.5 && \
-    tebako setup -p .tebako -R 3.2.4 && \
-    tebako press -p .tebako -R 3.1.5 -r test -e tebako-test-run.rb -o ruby-3.1.5-package && \
-    tebako press -p .tebako -R 3.2.4 -r test -e tebako-test-run.rb -o ruby-3.2.4-package && \
+RUN gem install tebako && \
+    tebako setup -R 3.1.6 && \
+    tebako setup -R 3.2.4 && \
+    tebako press -R 3.1.6 -r /root/test -e tebako-test-run.rb -o ruby-3.1.6-package && \
+    tebako press -R 3.2.4 -r /root/test -e tebako-test-run.rb -o ruby-3.2.4-package && \
     rm ruby-*-package
 
 ENV PS1=PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
