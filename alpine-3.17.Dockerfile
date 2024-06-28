@@ -43,8 +43,6 @@ RUN apk --no-cache --upgrade add build-base cmake git bash sudo  \
 ENV CC=clang
 ENV CXX=clang++
 
-RUN gem install tebako
-
 # https://github.com/actions/checkout/issues/1014
 # RUN adduser --disabled-password --gecos "" --home $HOME tebako && \
 #    printf "\ntebako\tALL=(ALL)\tNOPASSWD:\tALL" > /etc/sudoers.d/tebako
@@ -53,11 +51,12 @@ RUN gem install tebako
 
 # So we are running as root, HOME=/root, tebako prefix (default) /root/.tebako
 
-COPY test $HOME/test
+COPY test /root/test
 
 # Create packaging environment for Ruby 3.1.6, 3.2.4
 # Test and "warm up" since initialization is fully finished after the first packaging
-RUN tebako setup -R 3.1.6 && \
+RUN gem install tebako && \
+    tebako setup -R 3.1.6 && \
     tebako setup -R 3.2.4 && \
     tebako press -R 3.1.6 -r test -e tebako-test-run.rb -o ruby-3.1.6-package && \
     tebako press -R 3.2.4 -r test -e tebako-test-run.rb -o ruby-3.2.4-package && \
