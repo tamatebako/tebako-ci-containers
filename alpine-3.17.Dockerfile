@@ -51,6 +51,7 @@ ENV CXX=clang++
 
 # So we are running as root, HOME=/root, tebako prefix (default) /root/.tebako
 
+ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
 # Create packaging environment for Ruby 3.1.6, 3.2.4
@@ -62,5 +63,5 @@ RUN gem install tebako && \
     tebako press -R 3.2.4 -r /root/test -e tebako-test-run.rb -o ruby-3.2.4-package && \
     rm ruby-*-package
 
-ENV PS1=PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
+ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
 CMD ["bash"]

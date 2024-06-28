@@ -2,9 +2,6 @@ name: build-containers
 
 on:
   push:
-#    branches: [ main ]
-#    paths-ignore:
-#      - '**.adoc'
     tags:     [ 'v*' ]
   pull_request:
   workflow_dispatch:
@@ -16,7 +13,7 @@ concurrency:
 jobs:
   build-containers:
     name: ${{ matrix.container }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     permissions:
       contents: read
       packages: write
@@ -38,16 +35,32 @@ jobs:
           username: tamatebako
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            name/app
+            ghcr.io/username/app
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./${{ matrix.container }}.Dockerfile
           push: ${{ contains(github.ref, 'refs/tags/v') }}
-          tags: ghcr.io/tamatebako/tebako-${{ matrix.container }}
-          labels: |
-            latest
-            "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Purge old versions
         if: contains(github.ref, 'refs/tags/v')
@@ -58,3 +71,72 @@ jobs:
           package-type: 'container'
           min-versions-to-keep: 1
           delete-only-untagged-versions: 'true'
+
+  test-packaging-in-container:
+    name: Package ${{ matrix.gem }} in ${{ matrix.container }} with Ruby ${{ matrix.package_ruby_ver }}
+    if: contains(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-20.04
+    needs: build-containers
+    strategy:
+      fail-fast: false
+      matrix:
+        gem:
+          - 'fontist'
+        container:
+          - 'ubuntu-20.04'
+          - 'alpine-3.17'
+        package_ruby_ver:
+          - '3.1.6'
+          - '3.2.3'
+    container:
+      image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
+
+    steps:
+    - name: Checkout fontist
+      uses: actions/checkout@v4
+      with:
+        repository: fontist/fontist
+        path: ${{github.workspace}}/fontist
+
+    - name: Package fontist
+      run: tebako press --root=fontist --entry-point=fontist --output=fontist-package --Ruby=${{ matrix.package_ruby_ver }}
+
+    - name: Run smoke test
+      run: ./fontist-package help
+
+  test-packaging-by-container:
+    name: Package ${{ matrix.gem }} by ${{ matrix.container }} container with Ruby ${{ matrix.package_ruby_ver }}
+    if: contains(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-20.04
+    needs: build-containers
+    strategy:
+      fail-fast: false
+      matrix:
+        gem:
+          - 'fontist'
+        container:
+          - 'ubuntu-20.04'
+          - 'alpine-3.17'
+        package_ruby_ver:
+          - '3.1.6'
+          - '3.2.3'
+
+    steps:
+    - name: Checkout fontist
+      uses: actions/checkout@v4
+      with:
+        repository: fontist/fontist
+        path: ${{github.workspace}}/fontist
+
+    - name: Package fontist
+      run: |
+        docker run -v ${{github.workspace}}:/mnt/w -t ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest \
+                   tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=${{ matrix.package_ruby_ver }}
+
+    - name: Run smoke test Ubuntu
+      if: contains(matrix.container, 'ubuntu')
+      run: ./fontist-package help
+
+    - name: Run smoke test Alpine
+      if: contains(matrix.container, 'alpine')
+      run:  docker run -t alpine:latest ./fontist-package help
