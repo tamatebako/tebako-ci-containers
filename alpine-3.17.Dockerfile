@@ -58,8 +58,8 @@ COPY test /root/test
 RUN gem install tebako && \
     tebako setup -R 3.1.6 && \
     tebako setup -R 3.2.4 && \
-    tebako press -R 3.1.6 -r test -e tebako-test-run.rb -o ruby-3.1.6-package && \
-    tebako press -R 3.2.4 -r test -e tebako-test-run.rb -o ruby-3.2.4-package && \
+    tebako press -R 3.1.6 -r /root/test -e tebako-test-run.rb -o ruby-3.1.6-package && \
+    tebako press -R 3.2.4 -r /root/test -e tebako-test-run.rb -o ruby-3.2.4-package && \
     rm ruby-*-package
 
 ENV PS1=PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
