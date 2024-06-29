@@ -35,32 +35,16 @@ jobs:
           username: tamatebako
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          # list of Docker images to use as base name for tags
-          images: |
-            name/app
-            ghcr.io/username/app
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            type=schedule
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./${{ matrix.container }}.Dockerfile
           push: ${{ contains(github.ref, 'refs/tags/v') }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ghcr.io/tamatebako/tebako-${{ matrix.container }}
+          labels: |
+            latest
+            "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
       - name: Purge old versions
         if: contains(github.ref, 'refs/tags/v')
