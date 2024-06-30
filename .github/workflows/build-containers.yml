@@ -71,7 +71,7 @@ jobs:
           - 'alpine-3.17'
         package_ruby_ver:
           - '3.1.6'
-          - '3.2.3'
+          - '3.2.4'
     container:
       image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
 
@@ -103,7 +103,7 @@ jobs:
           - 'alpine-3.17'
         package_ruby_ver:
           - '3.1.6'
-          - '3.2.3'
+          - '3.2.4'
 
     steps:
     - name: Checkout fontist
@@ -119,8 +119,8 @@ jobs:
 
     - name: Run smoke test Ubuntu
       if: contains(matrix.container, 'ubuntu')
-      run: ./fontist-package help
+      run: ${{github.workspace}}/fontist-package help
 
     - name: Run smoke test Alpine
       if: contains(matrix.container, 'alpine')
-      run:  docker run -t alpine:latest ./fontist-package help
+      run:  docker run  -v ${{github.workspace}}:/mnt/w -t alpine:latest /bin/sh -c "apk add --no-cache libstdc++; /mnt/w/fontist-package help"
