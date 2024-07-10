@@ -31,7 +31,7 @@ Tebako containers are available with different base images to suit various needs
 To package your application from inside the Tebako container, follow these steps:
 
 . Pull the Tebako container image:
-+
+
 [source,sh]
 ----
 docker pull ghcr.io/tamatebako/amd64-tebako-<container_tag>:latest
@@ -63,7 +63,6 @@ docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/amd64-tebako-<container_ta
 tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.4
 ----
 +
-
 == Packaging from Outside the Container
 
 You can also package your application from outside the container by running a single Docker command.
@@ -71,15 +70,13 @@ This command mounts the GitHub workspace into the container and runs the `tebako
 
 [source,sh]
 ----
-docker run -v <application_folder>:/mnt/w -t ghcr.io/tamatebako/amd64-tebako-${{ matrix.container }}:latest \
+docker run -v <application_folder>:/mnt/w -t ghcr.io/tamatebako/amd64-tebako-<container_tag>:latest \
                    tebako press <tebako press parameters>
 ----
 +
-
 For example, assuming that you have a Ruby application in the `fontist` folder of the current folder, you can package it to ./fontist-package using the following command:
 [source,sh]
 ----
         docker run -v $PWD:/mnt/w -t ghcr.io/tamatebako/amd64-tebako-ubuntu-20.04:latest \
                    tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.4
 ----
-+
