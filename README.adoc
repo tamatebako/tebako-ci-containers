@@ -34,7 +34,7 @@ To package your application from inside the Tebako container, follow these steps
 
 [source,sh]
 ----
-docker pull ghcr.io/tamatebako/amd64-tebako-<container_tag>:latest
+docker pull ghcr.io/tamatebako/tebako-<container_tag>:latest
 ----
 +
 Replace `<container_tag>` with the desired tag (e.g., `ubuntu-20.04` or `alpine-3.17`).
@@ -43,7 +43,7 @@ Replace `<container_tag>` with the desired tag (e.g., `ubuntu-20.04` or `alpine-
 +
 [source,sh]
 ----
-docker run -it --rm -v <application_folder>:/mnt/w ghcr.io/tamatebako/amd64-tebako-<container_tag>:latest bash
+docker run -it --rm -v <application_folder>:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
 ----
 +
 Again, replace `<container_tag>` with the appropriate tag and <application_folder> with the path to your application folder.
@@ -58,7 +58,7 @@ tebako press <tebako press parameters>
 For example, assuming that you have a Ruby application in the `fontist` folder of the current folder, you can package it to ./fontist-package using the following command:
 [source,sh]
 ----
-docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/amd64-tebako-<container_tag>:latest bash
+docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
 # Inside the container:
 tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.4
 ----
@@ -70,13 +70,13 @@ This command mounts the GitHub workspace into the container and runs the `tebako
 
 [source,sh]
 ----
-docker run -v <application_folder>:/mnt/w -t ghcr.io/tamatebako/amd64-tebako-<container_tag>:latest \
+docker run -v <application_folder>:/mnt/w -t ghcr.io/tamatebako/tebako-${{ container_tag }}:latest \
                    tebako press <tebako press parameters>
 ----
 +
 For example, assuming that you have a Ruby application in the `fontist` folder of the current folder, you can package it to ./fontist-package using the following command:
 [source,sh]
 ----
-        docker run -v $PWD:/mnt/w -t ghcr.io/tamatebako/amd64-tebako-ubuntu-20.04:latest \
+        docker run -v $PWD:/mnt/w -t ghcr.io/tamatebako/tebako-ubuntu-20.04:latest \
                    tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.4
 ----

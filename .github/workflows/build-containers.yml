@@ -41,7 +41,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/tamatebako/amd64-tebako-${{ matrix.container }}
+            ghcr.io/tamatebako/tebako-${{ matrix.container }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -89,7 +89,7 @@ jobs:
           - '3.1.6'
           - '3.2.4'
     container:
-      image: ghcr.io/tamatebako/amd64-tebako-${{ matrix.container }}:latest
+      image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
 
     steps:
     - name: Checkout fontist
@@ -130,7 +130,7 @@ jobs:
 
     - name: Package fontist
       run: |
-        docker run -v ${{github.workspace}}:/mnt/w -t ghcr.io/tamatebako/amd64-tebako-${{ matrix.container }}:latest \
+        docker run -v ${{github.workspace}}:/mnt/w -t ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest \
                    tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=${{ matrix.package_ruby_ver }}
 
     - name: Run smoke test Ubuntu
