@@ -1,0 +1,19 @@
+name: add-tag
+
+on:
+  repository_dispatch:
+      types: [ 'tebako release' ]
+
+jobs:
+  tag:
+    name: tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create tag
+        run: |
+          git tag -a v${{ github.event.client_payload.version }}
+          git push origin v${{ github.event.client_payload.version }}
