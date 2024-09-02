@@ -63,6 +63,7 @@ docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:lat
 tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.5
 ----
 +
+
 == Packaging from Outside the Container
 
 You can also package your application from outside the container by running a single Docker command.

@@ -86,8 +86,8 @@ jobs:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
         package_ruby_ver:
-          - '3.1.6'
-          - '3.2.4'
+          - '3.2.5'
+          - '3.3.4'
     container:
       image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
 
