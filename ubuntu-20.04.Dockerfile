@@ -30,7 +30,7 @@ ENV TZ=Etc/UTC
 ENV ARCH=x64
 
 RUN apt-get -y update && \
-    apt-get -y install sudo wget git make pkg-config clang-12 clang++-12      \
+    apt-get -y install sudo wget git make pkg-config gcc-10 g++-10            \
     autoconf binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev     \
     libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev  \
     libboost-filesystem-dev libboost-program-options-dev libboost-system-dev  \
@@ -58,13 +58,13 @@ RUN /opt/tools/tools.sh install_cmake && \
 ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
-# Create packaging environment for Ruby 3.1.6, 3.2.4
+# Create packaging environment for Ruby 3.3.4, 3.2.5
 # Test and "warm up" since initialization is fully finished after the first packaging
 RUN gem install tebako && \
-    tebako setup -R 3.1.6 && \
-    tebako setup -R 3.2.4 && \
-    tebako press -R 3.1.6 -r /root/test -e tebako-test-run.rb -o ruby-3.1.6-package && \
-    tebako press -R 3.2.4 -r /root/test -e tebako-test-run.rb -o ruby-3.2.4-package && \
+    tebako setup -R 3.3.4 && \
+    tebako setup -R 3.2.5 && \
+    tebako press -R 3.3.4 -r /root/test -e tebako-test-run.rb -o ruby-3.3.4-package && \
+    tebako press -R 3.2.5 -r /root/test -e tebako-test-run.rb -o ruby-3.2.5-package && \
     rm ruby-*-package
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"

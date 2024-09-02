@@ -5,7 +5,7 @@ system for read-only purposes. Tebako containers offer a streamlined and isolate
 ensuring consistency and reproducibility across different development setups. By using containers, developers can bypass
 the complexities of managing multiple dependencies on their local machines.
 
-The available containers are tailored for Tebako packaging, featuring preinstalled Ruby environments versions 3.1.6 and 3.2.4.
+The available containers are tailored for Tebako packaging, featuring preinstalled Ruby environments versions 3.2.5 and 3.3.4.
 
 This project contains definitions of docker containers with preinstalled Tebako packaging environment.
 
@@ -60,7 +60,7 @@ For example, assuming that you have a Ruby application in the `fontist` folder o
 ----
 docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
 # Inside the container:
-tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.4
+tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.5
 ----
 +
 == Packaging from Outside the Container
@@ -78,5 +78,5 @@ For example, assuming that you have a Ruby application in the `fontist` folder o
 [source,sh]
 ----
         docker run -v $PWD:/mnt/w -t ghcr.io/tamatebako/tebako-ubuntu-20.04:latest \
-                   tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.4
+                   tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.5
 ----
