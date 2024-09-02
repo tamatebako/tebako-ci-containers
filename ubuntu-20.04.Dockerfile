@@ -39,8 +39,8 @@ RUN apt-get -y update && \
     libdwarf-dev libelf-dev libgoogle-glog-dev libffi-dev libgdbm-dev         \
     libyaml-dev libncurses-dev libreadline-dev libutfcpp-dev libstdc++-10-dev
 
-ENV CC=clang-12
-ENV CXX=clang++-12
+ENV CC=gcc-10
+ENV CXX=g++-10
 
 COPY tools /opt/tools
 
