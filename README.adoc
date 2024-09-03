@@ -1,25 +1,51 @@
-== Purpose
+= Tebako Docker containers
 
-Tebako is an executable packager. It packages a set of files into a DwarFS file
-system for read-only purposes. Tebako containers offer a streamlined and isolated environment for packaging applications,
-ensuring consistency and reproducibility across different development setups. By using containers, developers can bypass
-the complexities of managing multiple dependencies on their local machines.
+== Pre-built containers
 
-The available containers are tailored for Tebako packaging, featuring preinstalled Ruby environments versions 3.2.5 and 3.3.4.
+This repository contains definitions of Docker containers with a preinstalled
+Tebako packaging environment, and provides those built Docker containers.
 
-This project contains definitions of docker containers with preinstalled Tebako packaging environment.
+Tebako containers offer a streamlined and isolated environment for packaging
+applications, ensuring consistency and reproducibility across different
+development setups. By using containers, developers can bypass the complexities
+of managing multiple dependencies on their local machines.
 
-= Packaging with Tebako Container
 
-This document describes how to package applications using the Tebako container. Tebako simplifies the process of packaging Ruby applications,
-allowing for easy distribution. There are two primary methods for packaging with Tebako: from inside the container and from outside using Docker commands.
 
-== Available Container Tags
+== What is Tebako?
 
-Tebako containers are available with different base images to suit various needs. The currently available tags are:
+Tebako is an executable packager that simplifies the process of packaging applications
+that utilize an interpretive runtime, allowing for easy distribution.
 
-* `ubuntu-20.04`: This tag is based on Ubuntu 20.04 LTS, providing a stable and widely used environment for packaging.
-* `alpine-3.17`: For those who prefer a minimalistic approach, this tag is based on Alpine Linux 3.17, offering a smaller image size.
+It packages a set of files into a DwarFS file system for read-only purposes.
+
+Please refer to the https://www.tebako.org[Tebako website] for more details.
+
+
+
+== Available container tags
+
+Tebako containers are available with different base images to suit various needs.
+
+The currently available tags are:
+
+`ubuntu-20.04`::
+This container is based on Ubuntu 20.04 LTS (`glibc`), providing a stable and
+widely used environment for packaging.
+
+`alpine-3.17`::
+This container is based on Alpine Linux 3.17 (`musl`), offering a smaller image
+size. Suitable for those who prefer a minimalistic approach.
+
+Both containers are tailored for Tebako packaging, featuring preinstalled Ruby
+environments versions 3.2.5 and 3.3.4.
+
+
+== Packaging with the Tebako containers
+
+There are two primary methods for packaging with Tebako: from inside the
+container and from outside using Docker commands.
+
 
 == Prerequisites
 
@@ -46,7 +72,8 @@ Replace `<container_tag>` with the desired tag (e.g., `ubuntu-20.04` or `alpine-
 docker run -it --rm -v <application_folder>:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
 ----
 +
-Again, replace `<container_tag>` with the appropriate tag and <application_folder> with the path to your application folder.
+Again, replace `<container_tag>` with the appropriate tag and
+<application_folder> with the path to your application folder.
 
 . Once inside, run the `tebako press` command:
 +
@@ -55,29 +82,38 @@ Again, replace `<container_tag>` with the appropriate tag and <application_folde
 tebako press <tebako press parameters>
 ----
 
-For example, assuming that you have a Ruby application in the `fontist` folder of the current folder, you can package it to ./fontist-package using the following command:
+For example, assuming that you have a Ruby application in the `fontist` folder
+of the current folder, you can package it to `./fontist-package` using the
+following command.
+
 [source,sh]
 ----
 docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
-# Inside the container:
+# After entering the container:
 tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.5
 ----
-+
+
 
 == Packaging from Outside the Container
 
 You can also package your application from outside the container by running a single Docker command.
-This command mounts the GitHub workspace into the container and runs the `tebako press` command, specifying the application root, entry point, output location, and Ruby version.
+
+This command mounts your workspace into the container and runs the
+`tebako press` command, specifying the application root, entry point, output
+location, and Ruby version.
 
 [source,sh]
 ----
-docker run -v <application_folder>:/mnt/w -t ghcr.io/tamatebako/tebako-${{ container_tag }}:latest \
-                   tebako press <tebako press parameters>
+docker run -v <application_folder>:/mnt/w \
+  -t ghcr.io/tamatebako/tebako-${{ container_tag }}:latest \
+  tebako press <tebako press parameters>
 ----
 +
-For example, assuming that you have a Ruby application in the `fontist` folder of the current folder, you can package it to ./fontist-package using the following command:
+For example, assuming that you have a Ruby application in the `fontist` folder of the current folder, you can package it to `./fontist-package` using the following command:
++
 [source,sh]
 ----
-        docker run -v $PWD:/mnt/w -t ghcr.io/tamatebako/tebako-ubuntu-20.04:latest \
-                   tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.5
+docker run -v $PWD:/mnt/w \
+  -t ghcr.io/tamatebako/tebako-ubuntu-20.04:latest \
+  tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.5
 ----
