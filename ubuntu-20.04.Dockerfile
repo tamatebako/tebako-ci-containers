@@ -30,7 +30,7 @@ ENV TZ=Etc/UTC
 ENV ARCH=x64
 
 RUN apt-get -y update && \
-    apt-get -y install sudo wget git make pkg-config gcc-10 g++-10            \
+    apt-get -y install sudo wget git make pkg-config clang-12 clang++-12            \
     autoconf binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev     \
     libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev  \
     libboost-filesystem-dev libboost-program-options-dev libboost-system-dev  \
@@ -39,8 +39,8 @@ RUN apt-get -y update && \
     libdwarf-dev libelf-dev libgoogle-glog-dev libffi-dev libgdbm-dev         \
     libyaml-dev libncurses-dev libreadline-dev libutfcpp-dev libstdc++-10-dev
 
-ENV CC=gcc-10
-ENV CXX=g++-10
+ENV CC=clang-12
+ENV CXX=clang++-12
 
 COPY tools /opt/tools
 
