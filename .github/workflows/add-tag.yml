@@ -13,7 +13,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Git identity
+        run: |
+          git config --global user.name "tebako-ci"
+          git config --global user.email "tebako-ci@users.noreply.github.com"
+
       - name: Create tag
         run: |
           git tag -a v${{ github.event.client_payload.version }}
           git push origin v${{ github.event.client_payload.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
