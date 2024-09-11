@@ -4,7 +4,11 @@ on:
   push:
     tags:
       - "v*"
+    paths-ignore:
+      - '.github/workflows/build-containers.yml'
   pull_request:
+    paths-ignore:
+      - '.github/workflows/build-containers.yml'
   workflow_dispatch:
 
 concurrency:
