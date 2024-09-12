@@ -20,7 +20,7 @@ jobs:
 
       - name: Create tag
         run: |
-          git tag v${{ github.event.client_payload.version }}
+          git tag ${{ github.event.client_payload.tag }}
           git push --tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
