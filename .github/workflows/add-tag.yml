@@ -23,4 +23,4 @@ jobs:
           git tag ${{ github.event.client_payload.tag }}
           git push --tags
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TEBAKO_CI_PAT_TOKEN }}
