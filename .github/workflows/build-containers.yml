@@ -10,7 +10,11 @@ on:
     paths-ignore:
       - '.github/workflows/build-containers.yml'
   workflow_dispatch:
-
+  workflow_run:
+    workflows: ["add-tag"]
+    types:
+      - completed
+      
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
