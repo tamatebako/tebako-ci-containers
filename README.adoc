@@ -38,7 +38,7 @@ This container is based on Alpine Linux 3.17 (`musl`), offering a smaller image
 size. Suitable for those who prefer a minimalistic approach.
 
 Both containers are tailored for Tebako packaging, featuring preinstalled Ruby
-environments versions 3.2.5 and 3.3.4.
+environments versions 3.2.5 and 3.3.5.
 
 
 == Using the Tebako containers
