@@ -14,7 +14,7 @@ on:
     workflows: ["add-tag"]
     types:
       - completed
-      
+
 concurrency:
   group: '${{ github.workflow }}-${{ github.job }}-${{ github.head_ref || github.ref_name }}'
   cancel-in-progress: true
@@ -95,7 +95,7 @@ jobs:
           - 'alpine-3.17'
         package_ruby_ver:
           - '3.2.5'
-          - '3.3.4'
+          - '3.3.5'
     container:
       image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
 
@@ -127,7 +127,7 @@ jobs:
           - 'alpine-3.17'
         package_ruby_ver:
           - '3.2.5'
-          - '3.3.4'
+          - '3.3.5'
 
     steps:
     - name: Checkout fontist

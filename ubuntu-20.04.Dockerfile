@@ -58,12 +58,12 @@ RUN /opt/tools/tools.sh install_cmake && \
 ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
-# Create packaging environment for Ruby 3.3.4, 3.2.5
+# Create packaging environment for Ruby 3.3.5, 3.2.5
 # Test and "warm up" since initialization is fully finished after the first packaging
 RUN gem install tebako && \
-    tebako setup -R 3.3.4 && \
+    tebako setup -R 3.3.5 && \
     tebako setup -R 3.2.5 && \
-    tebako press -R 3.3.4 -r /root/test -e tebako-test-run.rb -o ruby-3.3.4-package && \
+    tebako press -R 3.3.5 -r /root/test -e tebako-test-run.rb -o ruby-3.3.5-package && \
     tebako press -R 3.2.5 -r /root/test -e tebako-test-run.rb -o ruby-3.2.5-package && \
     rm ruby-*-package
 
