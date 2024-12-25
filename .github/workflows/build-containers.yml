@@ -37,6 +37,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Get latest tag
+        if: github.event_name == 'workflow_run'
+        id: get_latest_tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const latestTag = await github.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1
+            });
+            core.setOutput('latest_tag', latestTag.data[0].name);
+
+      - name: Set GITHUB_REF
+        if: github.event_name == 'workflow_run'
+        run: echo "GITHUB_REF=refs/tags/${{ steps.get_latest_tag.outputs.latest_tag }}" >> $GITHUB_ENV
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -66,7 +83,7 @@ jobs:
         with:
           context: .
           file: ./${{ matrix.container }}.Dockerfile
-          push: ${{ contains(github.ref, 'refs/tags/v') }}
+          push: ${{ contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -82,7 +99,7 @@ jobs:
 
   test-packaging-in-container:
     name: Package ${{ matrix.gem }} in ${{ matrix.container }} with Ruby ${{ matrix.package_ruby_ver }}
-    if: contains(github.ref, 'refs/tags/v')
+    if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
     runs-on: ubuntu-20.04
     needs: build-amd64-containers
     strategy:
@@ -114,7 +131,7 @@ jobs:
 
   test-packaging-by-container:
     name: Package ${{ matrix.gem }} by ${{ matrix.container }} container with Ruby ${{ matrix.package_ruby_ver }}
-    if: contains(github.ref, 'refs/tags/v')
+    if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
     runs-on: ubuntu-20.04
     needs: build-amd64-containers
     strategy:
