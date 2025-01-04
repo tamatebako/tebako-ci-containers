@@ -111,8 +111,8 @@ jobs:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
         package_ruby_ver:
-          - '3.2.5'
-          - '3.3.5'
+          - '3.2.6'
+          - '3.3.6'
     container:
       image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
 
@@ -143,8 +143,8 @@ jobs:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
         package_ruby_ver:
-          - '3.2.5'
-          - '3.3.5'
+          - '3.2.6'
+          - '3.3.6'
 
     steps:
     - name: Checkout fontist

@@ -54,13 +54,13 @@ ENV CXX=clang++
 ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
-# Create packaging environment for Ruby 3.3.5, 3.2.5
+# Create packaging environment for Ruby 3.3.6, 3.2.6
 # Test and "warm up" since initialization is fully finished after the first packaging
 RUN gem install tebako && \
-    tebako setup -R 3.3.5 && \
-    tebako setup -R 3.2.5 && \
-    tebako press -R 3.3.5 -r /root/test -e tebako-test-run.rb -o ruby-3.3.5-package && \
-    tebako press -R 3.2.5 -r /root/test -e tebako-test-run.rb -o ruby-3.2.5-package && \
+    tebako setup -R 3.3.6 && \
+    tebako setup -R 3.2.6 && \
+    tebako press -R 3.3.6 -r /root/test -e tebako-test-run.rb -o ruby-3.3.6-package && \
+    tebako press -R 3.2.6 -r /root/test -e tebako-test-run.rb -o ruby-3.2.6-package && \
     rm ruby-*-package
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
