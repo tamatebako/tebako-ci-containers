@@ -65,8 +65,11 @@ ARG macos_host_arch
 ARG ruby_version="3.3.6"
 
 # Set macOS-specific flags and install Ruby
-RUN /opt/tools/tools.sh set_macos_host_flags "$macos_host_arch" && \
-    gem install tebako && \
+# RUN /opt/tools/tools.sh set_macos_host_flags "$macos_host_arch" && \
+#     gem install tebako && \
+#     tebako setup -R ${ruby_version}
+
+RUN gem install tebako && \
     tebako setup -R ${ruby_version}
 
 # Test Layer
