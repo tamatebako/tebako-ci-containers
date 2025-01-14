@@ -23,7 +23,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-FROM ubuntu:focal
+FROM ubuntu:focal AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
@@ -56,16 +56,32 @@ RUN /opt/tools/tools.sh install_cmake && \
 # So we are running as root, HOME=/root, tebako prefix (default) /root/.tebako
 
 ENV TEBAKO_PREFIX=/root/.tebako
+
+# Ruby Setup Layer
+FROM base AS base-ruby
+LABEL stage="base-ruby"
+
+ARG macos_host_arch
+ARG ruby_version="3.3.6"
+
+# Set macOS-specific flags and install Ruby
+RUN /opt/tools/tools.sh set_macos_host_flags "$macos_host_arch" && \
+    gem install tebako && \
+    tebako setup -R ${ruby_version}
+
+# Test Layer
+FROM base-ruby AS test
+LABEL stage="test"
+
+# Copy test files and execute tests
 COPY test /root/test
+RUN tebako press -R ${ruby_version} -r /root/test -e tebako-test-run.rb -o ruby-${ruby_version}-package && \
+    rm ruby-${ruby_version}-package
 
-# Create packaging environment for Ruby 3.3.6, 3.2.6
-# Test and "warm up" since initialization is fully finished after the first packaging
-RUN gem install tebako && \
-    tebako setup -R 3.3.6 && \
-    tebako setup -R 3.2.6 && \
-    tebako press -R 3.3.6 -r /root/test -e tebako-test-run.rb -o ruby-3.3.6-package && \
-    tebako press -R 3.2.6 -r /root/test -e tebako-test-run.rb -o ruby-3.2.6-package && \
-    rm ruby-*-package
+# Final Production Image
+FROM base-ruby AS builder
+LABEL stage="builder"
 
-ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
+# Skip copying `test` into the final image to reduce size
+#ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
 CMD ["bash"]

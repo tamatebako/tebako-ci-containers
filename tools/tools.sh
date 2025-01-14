@@ -58,6 +58,35 @@ install_ruby() {
   rm -rf ${ruby_install}
 }
 
+set_macos_host_flags() {
+  local macos_host_arch=$1
+
+  if [ -z "$macos_host_arch" ]; then
+    echo "No macOS host architecture specified. Assuming Linux or other non-macOS environment."
+    return 0
+  fi
+
+  echo "Detected macOS host architecture: $macos_host_arch"
+  ARCH=$(uname -m)
+
+  case "$ARCH" in
+    x86_64)
+      echo "Running under Rosetta 2 emulation"
+      export LG_VADDR=39
+      ;;
+    arm64)
+      echo "Running natively on ARM64"
+      export LG_VADDR=39
+      ;;
+    *)
+      echo "Unknown architecture: $ARCH"
+      exit 1
+      ;;
+  esac
+
+  echo "LG_VADDR set to $LG_VADDR"
+}
+
 DIR0=$( dirname "$0" )
 DIR_TOOLS=$( cd "$DIR0" && pwd )
 
