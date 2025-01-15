@@ -43,6 +43,11 @@ RUN apk --no-cache --upgrade add build-base cmake git bash sudo  \
 ENV CC=clang
 ENV CXX=clang++
 
+# This is needed to deal with gems created by `bundler gem` that are
+# being packaged by `tebako press` inside of a container. More at
+# https://github.com/tamatebako/tebako-ci-containers/issues/40.
+RUN git config --global --add safe.directory '*'
+
 # https://github.com/actions/checkout/issues/1014
 # RUN adduser --disabled-password --gecos "" --home $HOME tebako && \
 #    printf "\ntebako\tALL=(ALL)\tNOPASSWD:\tALL" > /etc/sudoers.d/tebako
