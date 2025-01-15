@@ -74,7 +74,7 @@ ARG ruby_version="3.3.6"
 #     gem install tebako && \
 #     tebako setup -R ${ruby_version}
 
-RUN gem install tebako && \
+RUN gem install tebako -v 0.12.2.rc1 && \
     tebako setup -R ${ruby_version}
 
 # Test Layer
