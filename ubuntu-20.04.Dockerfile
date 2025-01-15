@@ -47,6 +47,11 @@ COPY tools /opt/tools
 RUN /opt/tools/tools.sh install_cmake && \
     /opt/tools/tools.sh install_ruby
 
+# This is needed to deal with gems created by `bundler gem` that are
+# being packaged by `tebako press` inside of a container. More at
+# https://github.com/tamatebako/tebako/issues/233#issuecomment-2593760210.
+RUN git config --global --add safe.directory '*'
+
 # https://github.com/actions/checkout/issues/1014
 # RUN adduser --disabled-password --gecos "" --home $HOME tebako && \
 #    printf "\ntebako\tALL=(ALL)\tNOPASSWD:\tALL" > /etc/sudoers.d/tebako
@@ -61,7 +66,7 @@ ENV TEBAKO_PREFIX=/root/.tebako
 FROM base AS base-ruby
 LABEL stage="base-ruby"
 
-ARG macos_host_arch
+# ARG macos_host_arch
 ARG ruby_version="3.3.6"
 
 # Set macOS-specific flags and install Ruby
