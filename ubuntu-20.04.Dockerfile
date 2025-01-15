@@ -1,4 +1,4 @@
-# Copyright (c) 2024 [Ribose Inc](https://www.ribose.com).
+# Copyright (c) 2024-2025 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
 # This file is a part of tamatebako
 #
@@ -47,19 +47,10 @@ COPY tools /opt/tools
 RUN /opt/tools/tools.sh install_cmake && \
     /opt/tools/tools.sh install_ruby
 
-# https://github.com/actions/checkout/issues/1014
-# RUN adduser --disabled-password --gecos "" --home $HOME tebako && \
-#    printf "\ntebako\tALL=(ALL)\tNOPASSWD:\tALL" > /etc/sudoers.d/tebako
-# USER tebako
-# ENV HOME=/home/tebako
-
-# So we are running as root, HOME=/root, tebako prefix (default) /root/.tebako
-
 ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
 # Create packaging environment for Ruby 3.3.6, 3.2.6
-# Test and "warm up" since initialization is fully finished after the first packaging
 RUN gem install tebako -v 0.12.2.rc1 && \
     tebako setup -R 3.3.6 && \
     tebako setup -R 3.2.6
