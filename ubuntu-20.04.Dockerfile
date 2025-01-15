@@ -42,6 +42,11 @@ RUN apt-get -y update && \
 ENV CC=clang-12
 ENV CXX=clang++-12
 
+# This is needed to deal with gems created by `bundler gem` that are
+# being packaged by `tebako press` inside of a container. More at
+# https://github.com/tamatebako/tebako-ci-containers/issues/40
+RUN git config --global --add safe.directory '*'
+
 COPY tools /opt/tools
 
 RUN /opt/tools/tools.sh install_cmake && \
