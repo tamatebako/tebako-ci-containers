@@ -58,10 +58,7 @@ COPY test /root/test
 # Test and "warm up" since initialization is fully finished after the first packaging
 RUN gem install tebako && \
     tebako setup -R 3.3.6 && \
-    tebako setup -R 3.2.6 && \
-    tebako press -R 3.3.6 -r /root/test -e tebako-test-run.rb -o ruby-3.3.6-package && \
-    tebako press -R 3.2.6 -r /root/test -e tebako-test-run.rb -o ruby-3.2.6-package && \
-    rm ruby-*-package
+    tebako setup -R 3.2.6
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
 CMD ["bash"]
