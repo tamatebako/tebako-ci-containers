@@ -65,16 +65,19 @@ ENV TEBAKO_PREFIX=/root/.tebako
 FROM base AS base-ruby
 LABEL stage="base-ruby"
 
-# ARG macos_host_arch
-ARG ruby_version="3.3.6"
+# Default build-time argument
+ARG ruby_version=3.3.6
+
+# Persistent environment variable
+ENV TEBAKO_RUBY_VERSION=$ruby_version
 
 # Set macOS-specific flags and install Ruby
 # RUN /opt/tools/tools.sh set_macos_host_flags "$macos_host_arch" && \
 #     gem install tebako && \
-#     tebako setup -R ${ruby_version}
+#     tebako setup -R $TEBAKO_RUBY_VERSION
 
 RUN gem install tebako -v 0.12.2.rc1 && \
-    tebako setup -R ${ruby_version}
+    tebako setup -R "$TEBAKO_RUBY_VERSION"
 
 # Test Layer
 FROM base-ruby AS test
@@ -82,8 +85,8 @@ LABEL stage="test"
 
 # Copy test files and execute tests
 COPY test /root/test
-RUN tebako press -R ${ruby_version} -r /root/test -e tebako-test-run.rb -o ruby-${ruby_version}-package && \
-    rm ruby-${ruby_version}-package
+RUN tebako press -R "$TEBAKO_RUBY_VERSION" -r /root/test -e tebako-test-run.rb -o "ruby-$TEBAKO_RUBY_VERSION-package" && \
+    rm "ruby-$TEBAKO_RUBY_VERSION-package"
 
 # Final Production Image
 FROM base-ruby AS builder
