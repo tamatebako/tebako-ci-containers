@@ -31,15 +31,31 @@ set -o errexit -o pipefail -o noclobber -o nounset
 : "${CMAKE_VERSION:=3.24.4-1}"
 : "${RUBY_VERSION:=3.1.6}"
 : "${RUBY_INSTALL_VERSION:=0.9.3}"
-: "${ARCH:=x64}"
 
 install_cmake() {
-  echo "Running install_cmake for CMake version ${CMAKE_VERSION} for ${ARCH}"
+  echo "Running install_cmake for CMake version ${CMAKE_VERSION}"
+
+  # Detect system architecture and resolve cmake_arch
+  case "$(uname -m)" in
+    x86_64)
+      cmake_arch="x64"
+      ;;
+    arm64 | aarch64)
+      cmake_arch="arm64"
+      ;;
+    *)
+      echo "Unsupported architecture: $(uname -m)"
+      exit 1
+      ;;
+  esac
+
+  echo "Detected architecture: $(uname -m), resolved cmake_arch: ${cmake_arch}"
+
   local cmake_install=${LOCAL_BUILDS}/cmake
   mkdir -p ${cmake_install}
   pushd ${cmake_install}
-  wget -nv https://github.com/xpack-dev-tools/cmake-xpack/releases/download/v${CMAKE_VERSION}/xpack-cmake-${CMAKE_VERSION}-linux-${ARCH}.tar.gz
-  tar -zxf xpack-cmake-${CMAKE_VERSION}-linux-${ARCH}.tar.gz --directory /usr --strip-components=1 --skip-old-files
+  wget -nv https://github.com/xpack-dev-tools/cmake-xpack/releases/download/v${CMAKE_VERSION}/xpack-cmake-${CMAKE_VERSION}-linux-${cmake_arch}.tar.gz
+  tar -zxf xpack-cmake-${CMAKE_VERSION}-linux-${cmake_arch}.tar.gz --directory /usr --strip-components=1 --skip-old-files
   popd
   rm -rf ${cmake_install}
 }
@@ -56,35 +72,6 @@ install_ruby() {
   ruby-install --system ruby ${RUBY_VERSION} -- --without-gmp --disable-dtrace --disable-debug-env --disable-install-doc CC=${CC}
   popd
   rm -rf ${ruby_install}
-}
-
-set_macos_host_flags() {
-  local macos_host_arch=$1
-
-  if [ -z "$macos_host_arch" ]; then
-    echo "No macOS host architecture specified. Assuming Linux or other non-macOS environment."
-    return 0
-  fi
-
-  echo "Detected macOS host architecture: $macos_host_arch"
-  ARCH=$(uname -m)
-
-  case "$ARCH" in
-    x86_64)
-      echo "Running under Rosetta 2 emulation"
-      export LG_VADDR=39
-      ;;
-    arm64)
-      echo "Running natively on ARM64"
-      export LG_VADDR=39
-      ;;
-    *)
-      echo "Unknown architecture: $ARCH"
-      exit 1
-      ;;
-  esac
-
-  echo "LG_VADDR set to $LG_VADDR"
 }
 
 DIR0=$( dirname "$0" )
