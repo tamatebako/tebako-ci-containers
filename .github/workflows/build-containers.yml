@@ -4,11 +4,7 @@ on:
   push:
     tags:
       - "v*"
-    paths-ignore:
-      - '.github/workflows/build-containers.yml'
   pull_request:
-    paths-ignore:
-      - '.github/workflows/build-containers.yml'
   workflow_dispatch:
   workflow_run:
     workflows: ["add-tag"]
@@ -36,10 +32,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set GITHUB_REF
         if: github.event_name == 'workflow_run'
-        run: echo "GITHUB_REF=refs/tags/$(git tag --sort=-v:refname | grep -v '\.rc[0-9]\+$' | head -n 1)" >> $GITHUB_ENV
+        run: |
+          echo "Setting GITHUB_REF to refs/tags/$(git tag --sort=-v:refname | grep -v '\.rc[0-9]\+$' | head -n 1)"
+          echo "GITHUB_REF=refs/tags/$(git tag --sort=-v:refname | grep -v '\.rc[0-9]\+$' | head -n 1)" >> $GITHUB_ENV
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
