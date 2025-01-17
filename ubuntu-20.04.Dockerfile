@@ -51,7 +51,7 @@ ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
 # Create packaging environment for Ruby 3.3.6, 3.2.6
-RUN gem install tebako -v 0.12.2.rc1 && \
+RUN gem install tebako && \
     tebako setup -R 3.3.6 && \
     tebako setup -R 3.2.6 && \
     tebako press -R 3.3.6 -r /root/test -e tebako-test-run.rb -o ruby-3.3.6-package && \
