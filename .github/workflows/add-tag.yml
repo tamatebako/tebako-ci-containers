@@ -24,7 +24,3 @@ jobs:
           git push origin ${{ github.event.client_payload.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.TEBAKO_CI_PAT_TOKEN }}
-
-      - name: Set output
-        id: set_output
-        run: echo "::set-output name=tag::v${{ github.event.client_payload.tag }}"
