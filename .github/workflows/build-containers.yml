@@ -32,6 +32,9 @@ jobs:
           - { host: 'ubuntu-22.04', platform: linux/amd64, suffix: 'x64', suffix2: 'amd64' }
           - { host: 'ubuntu-22.04-arm', platform: linux/arm64, suffix: 'arm64', suffix2: 'arm64' }
 
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,7 +71,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}-${{ matrix.architecture.suffix2 }},enable=${{ github.event_name != 'workflow_run' }}
             type=semver,pattern={{major}}-${{ matrix.architecture.suffix2 }},value=${{ env.VERSION }},enable=${{ github.event_name == 'workflow_run' }}
             type=semver,pattern={{major}}-${{ matrix.architecture.suffix2 }},enable=${{ github.event_name != 'workflow_run' }}
-            type=sha-${{ matrix.architecture.suffix2 }}
+            type=sha,suffix=-${{ matrix.architecture.suffix2 }}
           labels: |
             org.opencontainers.image.vendor=Ribose Inc.
             org.opencontainers.image.licenses=BSD-2-Clause
@@ -84,7 +87,7 @@ jobs:
         with:
           context: .
           file: ./${{ matrix.container }}.Dockerfile
-          push: ${{ contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run' }}
+          push:  ${{ contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
@@ -96,16 +99,50 @@ jobs:
         continue-on-error: true
         uses: actions/delete-package-versions@v5
         with:
-          package-name: tebako-${{ matrix.container }}-amd64
+          package-name: amd64-tebako-${{ matrix.container }}
           package-type: container
           min-versions-to-keep: 0
           delete-only-untagged-versions: false
+
+  create-manifests:
+    name: Create manifest for ghcr.io/tamatebako/tebako-${{ matrix.container }}
+    if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
+    runs-on: ubuntu-22.04
+    needs: build-containers
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        container:
+          - 'ubuntu-20.04'
+          - 'alpine-3.17'
+    steps:
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: tamatebako
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create SHA manifest and push
+        run: |
+          for tag in $(echo "${{ needs.build-containers.outputs.tags }}" | tr ',' '\n'); do
+            base_tag=$(echo $tag | sed -E 's/.*:(.*)-(amd64|arm64)/\1/')
+            echo "Processing $tag, using base tag $base_tag"
+            docker manifest create \
+              ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag \
+                --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-amd64 \
+                --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-arm64
+            docker manifest push ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag
+          done
 
   test-packaging-in-container:
     name: Package ${{ matrix.gem }} in ${{ matrix.container }} ${{ matrix.architecture.platform }} with Ruby ${{ matrix.package_ruby_ver }}
     if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
     runs-on: ${{ matrix.architecture.host }}
-    needs: build-containers
+    needs: create-manifests
     strategy:
       fail-fast: false
       matrix:
@@ -141,7 +178,7 @@ jobs:
     name: Package ${{ matrix.gem }} by ${{ matrix.container }} ${{ matrix.architecture.platform }} container with Ruby ${{ matrix.package_ruby_ver }}
     if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
     runs-on: ${{ matrix.architecture.host }}
-    needs: build-containers
+    needs: create-manifests
     strategy:
       fail-fast: false
       matrix:
