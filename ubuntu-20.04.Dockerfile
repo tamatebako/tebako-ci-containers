@@ -27,7 +27,7 @@ FROM ubuntu:focal
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
-ENV ARCH=x64
+ARG ARCH=x64
 
 RUN apt-get -y update && \
     apt-get -y install sudo wget git make pkg-config clang-12 clang++-12            \
