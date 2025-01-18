@@ -71,9 +71,12 @@ jobs:
             type=sha
           labels: |
             org.opencontainers.image.vendor=Ribose Inc.
-            org.opencontainers.image.licenses=BSD-3-Clause
+            org.opencontainers.image.licenses=BSD-2-Clause
             org.opencontainers.image.documentation=https://www.tamatebako.org
             org.opencontainers.image.source==${{ github.repositoryUrl }}
+            org.opencontainers.image.description=Tebako executable packager ${{ matrix.container }} container
+          annotations: |
+            org.opencontainers.image.licenses=BSD-2-Clause
             org.opencontainers.image.description=Tebako executable packager ${{ matrix.container }} container
 
       - name: Build and push Docker image
@@ -84,6 +87,7 @@ jobs:
           push: ${{ contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           platforms: ${{ matrix.architecture.platform }}
           build-args: ARCH=${{ matrix.architecture.suffix }}
 
