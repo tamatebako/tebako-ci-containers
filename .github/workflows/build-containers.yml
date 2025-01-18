@@ -29,8 +29,8 @@ jobs:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
         architecture:
-          - { host: 'ubuntu-22.04', platform: 'linux/amd64', suffix: 'x64' }
-          - { host: 'ubuntu-22.04-arm', platform: 'linux/arm64', suffix: 'arm64' }
+          - { host: 'ubuntu-22.04', platform: linux/amd64, suffix: 'x64', suffix2: 'amd64' }
+          - { host: 'ubuntu-22.04-arm', platform: linux/arm64, suffix: 'arm64', suffix2: 'arm64' }
 
     steps:
       - name: Checkout
@@ -62,13 +62,13 @@ jobs:
           images: |
             ghcr.io/tamatebako/tebako-${{ matrix.container }}
           tags: |
-            type=semver,pattern={{version}},value=${{ env.VERSION }},enable=${{ github.event_name == 'workflow_run' }}
-            type=semver,pattern={{version}},enable=${{ github.event_name != 'workflow_run' }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ env.VERSION }},enable=${{ github.event_name == 'workflow_run' }}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ github.event_name != 'workflow_run' }}
-            type=semver,pattern={{major}},value=${{ env.VERSION }},enable=${{ github.event_name == 'workflow_run' }}
-            type=semver,pattern={{major}},enable=${{ github.event_name != 'workflow_run' }}
-            type=sha
+            type=semver,pattern={{version}}-${{ matrix.architecture.suffix2 }},value=${{ env.VERSION }},enable=${{ github.event_name == 'workflow_run' }}
+            type=semver,pattern={{version}}-${{ matrix.architecture.suffix2 }},enable=${{ github.event_name != 'workflow_run' }}
+            type=semver,pattern={{major}}.{{minor}}-${{ matrix.architecture.suffix2 }},value=${{ env.VERSION }},enable=${{ github.event_name == 'workflow_run' }}
+            type=semver,pattern={{major}}.{{minor}}-${{ matrix.architecture.suffix2 }},enable=${{ github.event_name != 'workflow_run' }}
+            type=semver,pattern={{major}}-${{ matrix.architecture.suffix2 }},value=${{ env.VERSION }},enable=${{ github.event_name == 'workflow_run' }}
+            type=semver,pattern={{major}}-${{ matrix.architecture.suffix2 }},enable=${{ github.event_name != 'workflow_run' }}
+            type=sha-${{ matrix.architecture.suffix2 }}
           labels: |
             org.opencontainers.image.vendor=Ribose Inc.
             org.opencontainers.image.licenses=BSD-2-Clause
@@ -98,7 +98,7 @@ jobs:
         with:
           package-name: tebako-${{ matrix.container }}-amd64
           package-type: container
-          min-versions-to-keep: 10
+          min-versions-to-keep: 0
           delete-only-untagged-versions: false
 
   test-packaging-in-container:
@@ -115,13 +115,14 @@ jobs:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
         architecture:
-          - { host: 'ubuntu-22.04', platform: 'linux/amd64' }
-          - { host: 'ubuntu-22.04-arm', platform: 'linux/arm64' }
+          - { host: 'ubuntu-22.04', platform: linux/amd64 }
+          - { host: 'ubuntu-22.04-arm', platform: linux/arm64 }
         package_ruby_ver:
           - '3.2.6'
           - '3.3.6'
     container:
       image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
+      options: --platform ${{ matrix.architecture.platform }}
 
     steps:
     - name: Checkout fontist
@@ -150,8 +151,8 @@ jobs:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
         architecture:
-          - { host: 'ubuntu-22.04', platform: 'linux/amd64' }
-          - { host: 'ubuntu-22.04-arm', platform: 'linux/arm64' }
+          - { host: 'ubuntu-22.04', platform: linux/amd64 }
+          - { host: 'ubuntu-22.04-arm', platform: linux/arm64 }
         package_ruby_ver:
           - '3.2.6'
           - '3.3.6'
@@ -165,8 +166,8 @@ jobs:
 
     - name: Package fontist
       run: |
-        docker run -v ${{github.workspace}}:/mnt/w -t ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest \
-                   tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=${{ matrix.package_ruby_ver }}
+        docker run --platform ${{ matrix.architecture.platform }} -v ${{github.workspace}}:/mnt/w -t ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest \
+             tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=${{ matrix.package_ruby_ver }}
 
     - name: Run smoke test Ubuntu
       if: contains(matrix.container, 'ubuntu')
