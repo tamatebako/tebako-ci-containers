@@ -37,9 +37,10 @@ widely used environment for packaging.
 This container is based on Alpine Linux 3.17 (`musl`), offering a smaller image
 size. Suitable for those who prefer a minimalistic approach.
 
-Both containers are tailored for Tebako packaging, featuring preinstalled Ruby
+Containers are tailored for Tebako packaging, featuring preinstalled Ruby
 environments versions 3.2.6 and 3.3.6.
 
+Both acontainers are available on the GitHub Container Registry (GHCR) for amd64 and arm64 architectures.
 
 == Using the Tebako containers
 
