@@ -29,7 +29,7 @@ set -o errexit -o pipefail -o noclobber -o nounset
 
 : "${LOCAL_BUILDS:=/tmp/tebako}"
 : "${CMAKE_VERSION:=3.24.4-1}"
-: "${RUBY_VERSION:=3.1.6}"
+: "${RUBY_VERSION:=3.2.6}"
 : "${RUBY_INSTALL_VERSION:=0.9.3}"
 : "${ARCH:=x64}"
 
