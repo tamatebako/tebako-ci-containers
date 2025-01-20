@@ -138,6 +138,34 @@ jobs:
             docker manifest push ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag
           done
 
+  dispatch-dependent-repositories:
+    name: Dispatch dependent repositories
+    if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
+    needs: create-manifests
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set GITHUB_REF
+        run: |
+          TAG=$(git tag --sort=-v:refname | grep -v '\.rc[0-9]\+$' | head -n 1)
+          VERSION=${TAG#v}
+          echo "Setting VERSION to $VERSION"
+          echo "Setting GITHUB_REF to refs/tags/$TAG"
+          echo "GITHUB_REF=refs/tags/$TAG" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Dispatch dependent repositories
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TEBAKO_CI_PAT_TOKEN }}
+          repository: tamatebako/tebako-samples
+          event-type: 'tebako release'
+          client-payload: '{ "tag": "v${{ env.VERSION }}" }'
+
   test-packaging-in-container:
     name: Package ${{ matrix.gem }} in ${{ matrix.container }} ${{ matrix.architecture.platform }} with Ruby ${{ matrix.package_ruby_ver }}
     if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
