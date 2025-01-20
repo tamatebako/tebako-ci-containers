@@ -105,7 +105,7 @@ jobs:
           delete-only-untagged-versions: false
 
   create-manifests:
-    name: Create manifest for ghcr.io/tamatebako/tebako-${{ matrix.container }}
+    name: Create multiarchitecture manifests for ${{ matrix.container }}
     if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
     runs-on: ubuntu-22.04
     needs: build-containers
@@ -126,16 +126,18 @@ jobs:
           username: tamatebako
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create SHA manifest and push
+      - name: Create multiarchitecture manifests and push
         run: |
             for tag in $(echo "${{ needs.build-containers.outputs.tags }}" | tr ',' '\n'); do
-                if [[ $tag != *:latest ]]; then
+              if [[ $tag != *:latest ]]; then
                 base_tag=$(echo $tag | sed -E 's/.*:(.*)-(amd64|arm64)/\1/')
                 echo "Processing $tag, using base tag $base_tag"
                 docker manifest create \
                   ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag \
                     --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-amd64 \
                     --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-arm64
+                 docker manifest push ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag
+
                 if [[ $base_tag == sha* ]]; then
                   docker manifest push ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag
                   docker manifest create \
@@ -175,7 +177,7 @@ jobs:
           event-type: 'tebako release'
           client-payload: '{ "tag": "v${{ env.VERSION }}" }'
 
-  test-packaging-in-container:
+  test-packaging-in-ubuntu-container:
     name: Package ${{ matrix.gem }} in ${{ matrix.container }} ${{ matrix.architecture.platform }} with Ruby ${{ matrix.package_ruby_ver }}
     if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
     runs-on: ${{ matrix.architecture.host }}
@@ -187,12 +189,10 @@ jobs:
           - 'fontist'
         container:
           - 'ubuntu-20.04'
-          - 'alpine-3.17'
         architecture:
           - { host: 'ubuntu-22.04', platform: linux/amd64 }
           - { host: 'ubuntu-22.04-arm', platform: linux/arm64 }
         package_ruby_ver:
-          - '3.2.6'
           - '3.3.6'
     container:
       image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
@@ -206,12 +206,46 @@ jobs:
         path: ${{github.workspace}}/fontist
 
     - name: Package fontist
+      run: tebako press --patchelf --root=fontist --entry-point=fontist --output=fontist-package --Ruby=${{ matrix.package_ruby_ver }}
+
+    - name: Run smoke test
+      run: ./fontist-package help
+
+  test-packaging-in-alpine-container:
+    name: Package ${{ matrix.gem }} in ${{ matrix.container }} ${{ matrix.architecture.platform }} with Ruby ${{ matrix.package_ruby_ver }}
+    if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
+    runs-on: ${{ matrix.architecture.host }}
+    needs: create-manifests
+    strategy:
+      fail-fast: false
+      matrix:
+        gem:
+          - 'fontist'
+        container:
+          - 'alpine-3.17'
+        architecture:
+          - { host: 'ubuntu-22.04', platform: linux/amd64 }
+          - { host: 'ubuntu-22.04-arm', platform: linux/arm64 }
+        package_ruby_ver:
+          - '3.3.6'
+    container:
+      image: ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest
+      options: --platform ${{ matrix.architecture.platform }}
+
+    steps:
+    # actions/checkout does not support alpine on arm platform
+    - name: Checkout fontist
+      run: |
+        git clone --depth 1 https://github.com/fontist/fontist
+
+    - name: Package fontist
+      continue-on-error: true
       run: tebako press --root=fontist --entry-point=fontist --output=fontist-package --Ruby=${{ matrix.package_ruby_ver }}
 
     - name: Run smoke test
       run: ./fontist-package help
 
-  test-packaging-by-container:
+  test-packaging-by-ubuntu-container:
     name: Package ${{ matrix.gem }} by ${{ matrix.container }} ${{ matrix.architecture.platform }} container with Ruby ${{ matrix.package_ruby_ver }}
     if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
     runs-on: ${{ matrix.architecture.host }}
@@ -223,13 +257,11 @@ jobs:
           - 'fontist'
         container:
           - 'ubuntu-20.04'
-          - 'alpine-3.17'
         architecture:
           - { host: 'ubuntu-22.04', platform: linux/amd64 }
           - { host: 'ubuntu-22.04-arm', platform: linux/arm64 }
         package_ruby_ver:
           - '3.2.6'
-          - '3.3.6'
 
     steps:
     - name: Checkout fontist
@@ -241,12 +273,41 @@ jobs:
     - name: Package fontist
       run: |
         docker run --platform ${{ matrix.architecture.platform }} -v ${{github.workspace}}:/mnt/w -t ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest \
-             tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=${{ matrix.package_ruby_ver }}
+             tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=${{ matrix.package_ruby_ver }} --patchelf
 
     - name: Run smoke test Ubuntu
-      if: contains(matrix.container, 'ubuntu')
       run: ${{github.workspace}}/fontist-package help
 
+  test-packaging-by-alpine-container:
+    name: Package ${{ matrix.gem }} by ${{ matrix.container }} ${{ matrix.architecture.platform }} container with Ruby ${{ matrix.package_ruby_ver }}
+    if: contains(github.ref, 'refs/tags/v') || github.event_name == 'workflow_run'
+    runs-on: ${{ matrix.architecture.host }}
+    needs: create-manifests
+    strategy:
+      fail-fast: false
+      matrix:
+        gem:
+          - 'fontist'
+        container:
+          - 'alpine-3.17'
+        architecture:
+          - { host: 'ubuntu-22.04', platform: linux/amd64 }
+          - { host: 'ubuntu-22.04-arm', platform: linux/arm64 }
+        package_ruby_ver:
+          - '3.2.6'
+
+    steps:
+    - name: Checkout fontist
+      uses: actions/checkout@v4
+      with:
+        repository: fontist/fontist
+        path: ${{github.workspace}}/fontist
+
+    - name: Package fontist
+      run: |
+        docker run --platform ${{ matrix.architecture.platform }} -v ${{github.workspace}}:/mnt/w -t ghcr.io/tamatebako/tebako-${{ matrix.container }}:latest \
+              tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=${{ matrix.package_ruby_ver }}
+
     - name: Run smoke test Alpine
-      if: contains(matrix.container, 'alpine')
+      continue-on-error: true
       run:  docker run  -v ${{github.workspace}}:/mnt/w -t alpine:latest /bin/sh -c "apk add --no-cache libstdc++; /mnt/w/fontist-package help"
