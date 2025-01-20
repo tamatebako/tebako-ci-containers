@@ -129,15 +129,17 @@ jobs:
       - name: Create SHA manifest and push
         run: |
             for tag in $(echo "${{ needs.build-containers.outputs.tags }}" | tr ',' '\n'); do
-            base_tag=$(echo $tag | sed -E 's/.*:(.*)-(amd64|arm64)/\1/')
-              if [ "$base_tag" != "latest" ]; then
-                echo "Processing $tag, using base tag $base_tag"
-                docker manifest create \
-                ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag \
-                  --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-amd64 \
-                  --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-arm64
-                docker manifest push ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag
+              if [[ $tag == *:latest ]]; then
+                base_tag="latest"
+              else
+                base_tag=$(echo $tag | sed -E 's/.*:(.*)-(amd64|arm64)/\1/')
               fi
+              echo "Processing $tag, using base tag $base_tag"
+              docker manifest create \
+              ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag \
+                --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-amd64 \
+                --amend ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag-arm64
+              docker manifest push ghcr.io/tamatebako/tebako-${{ matrix.container }}:$base_tag
             done
 
   dispatch-dependent-repositories:
