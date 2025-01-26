@@ -2,9 +2,13 @@ name: build-containers
 
 on:
   push:
+    paths-ignore:
+      - '**.adoc'
     tags:
       - "v*"
   pull_request:
+    paths-ignore:
+      - '**.adoc'
   workflow_dispatch:
   workflow_run:
     workflows: ["add-tag"]
