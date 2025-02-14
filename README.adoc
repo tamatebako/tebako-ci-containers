@@ -2,7 +2,8 @@
 
 == What is Tebako?
 
-Tebako is an executable packager designed to simplify the process of packaging applications that rely on an interpretive runtime, making distribution easier. It packages a set of files into a DwarFS file system for read-only purposes.
+Tebako is an executable packager designed to simplify the process of packaging applications that rely on an interpretive runtime, making distribution easier.
+It packages a set of files into a DwarFS file system for read-only purposes.
 
 For more details, visit the https://www.tebako.org[Tebako website].
 
@@ -42,7 +43,8 @@ The `--patchelf` option enables the creation of packages that are forward-compat
 
 This container is based on **Alpine Linux 3.17**, offering an environment for packaging applications for systems that use the https://musl.libc.org[`musl` implementation of the C standard library].
 
-Both containers are available on the **GitHub Container Registry (GHCR)** for **x86_64 (amd64)** and **aarch64 (arm64)** architectures, with multi-architecture manifests. These containers come preinstalled with Tebako packaging environments for Ruby versions **3.2.6** and **3.3.6**.
+Both containers are available on the **GitHub Container Registry (GHCR)** for **x86_64 (amd64)** and **aarch64 (arm64)** architectures, with multi-architecture manifests.
+These containers come preinstalled with Tebako packaging environments for Ruby versions **3.3.7** and **3.4.1**.
 
 == Using the Tebako Containers
 
@@ -83,7 +85,7 @@ To package the https://github.com/fontists/fontist[`fontist` gem], a Ruby applic
 ----
 docker run -v $PWD:/mnt/w \
   -t ghcr.io/tamatebako/tebako-ubuntu-20.04:latest \
-  tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.6
+  tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.3.7
 ----
 ====
 
@@ -127,13 +129,13 @@ To package the https://github.com/fontists/fontist[`fontist` gem], located in th
 $ docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
 
 # Run this after entering the container
-$ tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.2.6
+$ tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.3.7
 ----
 ====
 
 `Gemspec` files often specify the files included in the gem using `git ls-files`. When packaging from inside the container, the container's instance of `git` will be used to resolve these files.
 
-If you use a mounted host directory for packaging, the container's instance of `git` will be able to use it by default. 
+If you use a mounted host directory for packaging, the container's instance of `git` will be able to use it by default.
 To resolve this, you shall alter the container's configuration by running the following command before packaging:
 
 [source,sh]
