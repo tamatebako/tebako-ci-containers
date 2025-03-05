@@ -135,7 +135,7 @@ $ tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fonti
 
 `Gemspec` files often specify the files included in the gem using `git ls-files`. When packaging from inside the container, the container's instance of `git` will be used to resolve these files.
 
-If you use a mounted host directory for packaging, the container's instance of `git` will be able to use it by default.
+If you use a mounted host directory for packaging, the container's instance of `git` won't be able to use it by default.
 To resolve this, you shall alter the container's configuration by running the following command before packaging:
 
 [source,sh]
