@@ -1,6 +1,6 @@
 # Copyright (c) 2024-2025 [Ribose Inc](https://www.ribose.com).
 # All rights reserved.
-# This file is a part of tamatebako
+# This file is a part of the Tebako project.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,7 +30,7 @@ ENV TZ=Etc/UTC
 ARG ARCH=x64
 
 RUN apt-get -y update && \
-    apt-get -y install sudo wget git make pkg-config clang-12 clang++-12            \
+    apt-get -y install sudo wget git make pkg-config clang-12 clang++-12      \
     autoconf binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev     \
     libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev  \
     libboost-filesystem-dev libboost-program-options-dev libboost-system-dev  \
