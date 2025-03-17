@@ -43,7 +43,7 @@ The `--patchelf` option enables the creation of packages that are forward-compat
 
 This container is based on **Alpine Linux 3.17**, offering an environment for packaging applications for systems that use the https://musl.libc.org[`musl` implementation of the C standard library].
 
-Both containers are available on the **GitHub Container Registry (GHCR)** for **x86_64 (amd64)** and **aarch64 (arm64)** architectures, with multi-architecture manifests.
+Both containers are available on the **Docker Hub** and **GitHub Container Registry (GHCR)** for **x86_64 (amd64)** and **aarch64 (arm64)** architectures, with multi-architecture manifests.
 These containers come preinstalled with Tebako packaging environments for Ruby versions **3.3.7** and **3.4.1**.
 
 == Using the Tebako Containers
