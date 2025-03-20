@@ -26,8 +26,7 @@ RUN mkdir -p /usr/local/cmake && curl -Ls https://github.com/Kitware/CMake/relea
 # RPMs
 
 RUN yum install -y sudo git curl @Development pkgconfig bison flex autoconf binutils-devel libevent-devel acl libfmt-devel jemalloc-devel libiberty-devel double-conversion-devel lz4-devel xz\
--devel openssl-devel libunwind-devel boost-devel boost-filesystem boost-program-options boost-system boost-iostreams boost-date-time boost-context boost-regex boost-thread brotli-devel libd\
-    warf-devel elfutils-libelf-devel glog-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget
+-devel openssl-devel libunwind-devel libdwarf-devel elfutils-libelf-devel glog-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget
 
 # Set environment variables for rh-ruby30 to be default ruby
 RUN echo "source /opt/rh/rh-ruby30/enable" >> /etc/profile.d/rh-ruby30
@@ -79,6 +78,13 @@ RUN unzip /missing/dist/glog.zip -d /missing/src/ && \
     cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF .. && \
     cmake --build . --config Release --target install && \
     cd / && rm -rf /missing/src/glog-*
+
+ADD https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.bz2 /missing/dist/boost.tar.bz2
+RUN tar xjf /missing/dist/boost.tar.bz2 -C /missing/src && \
+    cd /missing/src/boost-* && \
+    ./bootstrap.sh && \
+    ./b2 install && \
+    cd / && rm -rf /missing/src/boost-*
 
 # Clone the utfcpp repository and copy headers to the include path
 RUN git clone https://github.com/nemtrif/utfcpp.git /usr/local/src/utfcpp && \
