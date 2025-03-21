@@ -49,13 +49,13 @@ RUN tar xJf /missing/dist/libdwarf.tar.xz -C /missing/src && \
     make installcheck \
     cd / && rm -f /missing/src/libdwarf*
 
-ENV OPENSSL_ROOT_DIR=/usr/local/openssl3
-ADD https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz  /missing/dist/openssl.tar.gz
-RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
+ENV OPENSSL_ROOT_DIR=/usr/local/openssl1.1
+ADD https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1u/openssl-1.1.1u.tar.gz /missing/dist/openssl.tar.gz
+RUN tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
     source /opt/rh/devtoolset-11/enable && \
     cd /missing/src/openssl-* && \
-    ./Configure --prefix=$OPENSSL_ROOT_DIR && \
-    make && \
+    ./Configure --prefix=$OPENSSL_ROOT_DIR linux-x86_64 && \
+    make -j$(nproc) && \
     make install && \
     cd / && rm -rf /missing/src/openssl*
 
