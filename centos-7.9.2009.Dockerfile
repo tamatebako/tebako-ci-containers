@@ -41,13 +41,15 @@ ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig
 ADD https://github.com/davea42/libdwarf-code/releases/download/v0.9.2/libdwarf-0.9.2.tar.xz /missing/dist/libdwarf.tar.xz
 RUN tar xJf /missing/dist/libdwarf.tar.xz -C /missing/src && \
     source /opt/rh/devtoolset-11/enable && \
+    yum install -y python3 && \
     cd /missing/src/libdwarf* && \
     ./configure && \
     make -j$(nproc) && \
-    make check \
-    make install \
-    make installcheck \
-    cd / && rm -f /missing/src/libdwarf*
+    make check && \
+    make install && \
+    make installcheck && \
+    yum remove -y python3 && \
+    cd / && rm -rf /missing/src/libdwarf*
 
 ENV OPENSSL_ROOT_DIR=/usr/local/openssl1.1
 ADD https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1u/openssl-1.1.1u.tar.gz /missing/dist/openssl.tar.gz
