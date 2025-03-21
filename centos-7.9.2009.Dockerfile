@@ -26,9 +26,7 @@ RUN mkdir -p /usr/local/cmake && curl -Ls https://github.com/Kitware/CMake/relea
 # RPMs
 
 RUN yum install -y sudo git curl @Development pkgconfig bison flex autoconf binutils-devel libevent-devel acl libfmt-devel libiberty-devel double-conversion-devel lz4-devel xz\
--devel openssl11-devel openssl11-static openssl11 libunwind-devel libdwarf-devel elfutils-libelf-devel glog-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget
-
-ENV OPENSSL_ROOT_DIR=/usr/include/openssl11
+-devel libunwind-devel libdwarf-devel elfutils-libelf-devel glog-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget perl-IPC-Cmd
 
 # Set environment variables for rh-ruby30 to be default ruby
 RUN echo "source /opt/rh/rh-ruby30/enable" >> /etc/profile.d/rh-ruby30
@@ -37,6 +35,16 @@ RUN echo "source /opt/rh/rh-ruby30/enable" >> /etc/profile.d/rh-ruby30
 RUN mkdir -p /missing/dist /missing/src
 
 # missing things we have to build from source
+ENV OPENSSL_ROOT_DIR=/usr/local/openssl3
+ADD https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz  /missing/dist/openssl.tar.gz
+RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
+    source /opt/rh/devtoolset-11/enable && \
+    cd /missing/src/openssl-* && \
+    ./Configure --prefix=$OPENSSL_ROOT_DIR && \
+    make && \
+    make install && \
+    cd / && rm -rf /missing/src/openssl*
+
 ADD https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 /missing/dist/jemalloc.tar.bz2
 RUN tar xjf /missing/dist/jemalloc.tar.bz2 -C /missing/src && \
     source /opt/rh/devtoolset-11/enable && \
