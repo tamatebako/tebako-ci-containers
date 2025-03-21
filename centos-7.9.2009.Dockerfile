@@ -1,4 +1,4 @@
-FROM centos:centos7.9.2009
+FROM centos:centos7.9.2009 AS base
 ADD https://raw.githubusercontent.com/AtlasGondal/centos7-eol-repo-fix/refs/heads/main/CentOS-Base.repo /etc/yum.repos.d
 COPY vault-scl.repo /etc/yum.repos.d/
 RUN yum install -y epel-release
