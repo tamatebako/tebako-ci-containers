@@ -33,7 +33,7 @@ base_tag=$2
 # Registries configuration
 declare -A registries=(
     ["ghcr"]="ghcr.io/tamatebako"
-#    ["docker"]="tebako"
+    ["docker"]="tebako"
 )
 
 # Create and push manifest for each registry

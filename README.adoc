@@ -76,6 +76,15 @@ $ docker run -v <application_folder>:/mnt/w \
   tebako press <tebako press parameters>
 ----
 
+or if you prefer Docker Hub
+[source,sh]
+----
+$ docker run -v <application_folder>:/mnt/w \
+  -t tebako/tebako-${{ container_tag }}:latest \
+  tebako press <tebako press parameters>
+----
+
+
 .Packaging the `fontist` Gem from Outside the Container
 [example]
 ====
@@ -85,6 +94,14 @@ To package the https://github.com/fontists/fontist[`fontist` gem], a Ruby applic
 ----
 docker run -v $PWD:/mnt/w \
   -t ghcr.io/tamatebako/tebako-ubuntu-20.04:latest \
+  tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.3.7
+----
+
+or if you prefer Docker Hub
+[source,sh]
+----
+docker run -v $PWD:/mnt/w \
+  -t tebako/tebako-ubuntu-20.04:latest \
   tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.3.7
 ----
 ====
