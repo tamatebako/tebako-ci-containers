@@ -48,6 +48,14 @@ RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
     make install && \
     cd / && rm -rf /missing/src/openssl*
 
+ADD https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.bz2 /missing/dist/boost.tar.bz2
+RUN tar xjf /missing/dist/boost.tar.bz2 -C /missing/src && \
+    source /opt/rh/devtoolset-11/enable && \
+    cd /missing/src/boost* && \
+    ./bootstrap.sh && \
+    ./b2 --without-python install && \
+    cd / && rm -rf /missing/src/boost*
+
 ADD https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 /missing/dist/jemalloc.tar.bz2
 RUN tar xjf /missing/dist/jemalloc.tar.bz2 -C /missing/src && \
     source /opt/rh/devtoolset-11/enable && \
@@ -102,14 +110,6 @@ RUN unzip /missing/dist/glog.zip -d /missing/src/ && \
     cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF .. && \
     cmake --build . --config Release --target install && \
     cd / && rm -rf /missing/src/glog-*
-
-ADD https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.bz2 /missing/dist/boost.tar.bz2
-RUN tar xjf /missing/dist/boost.tar.bz2 -C /missing/src && \
-    source /opt/rh/devtoolset-11/enable && \
-    cd /missing/src/boost* && \
-    ./bootstrap.sh && \
-    ./b2 --without-python install && \
-    cd / && rm -rf /missing/src/boost*
 
 # Clone the utfcpp repository and copy headers to the include path
 RUN git clone https://github.com/nemtrif/utfcpp.git /usr/local/src/utfcpp && \
