@@ -94,10 +94,11 @@ RUN unzip /missing/dist/glog.zip -d /missing/src/ && \
 
 ADD https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.bz2 /missing/dist/boost.tar.bz2
 RUN tar xjf /missing/dist/boost.tar.bz2 -C /missing/src && \
-    cd /missing/src/boost-* && \
+    source /opt/rh/devtoolset-11/enable && \
+    cd /missing/src/boost* && \
     ./bootstrap.sh && \
-    ./b2 install && \
-    cd / && rm -rf /missing/src/boost-*
+    ./b2 --without-python install && \
+    cd / && rm -rf /missing/src/boost*
 
 # Clone the utfcpp repository and copy headers to the include path
 RUN git clone https://github.com/nemtrif/utfcpp.git /usr/local/src/utfcpp && \
