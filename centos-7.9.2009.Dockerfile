@@ -34,6 +34,9 @@ RUN echo "source /opt/rh/rh-ruby30/enable" >> /etc/profile.d/rh-ruby30
 # places to drop things we have to build from source
 RUN mkdir -p /missing/dist /missing/src
 
+# ensure pkg-config finds stuff we install in /usr/local
+ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig
+
 # missing things we have to build from source
 ENV OPENSSL_ROOT_DIR=/usr/local/openssl3
 ADD https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz  /missing/dist/openssl.tar.gz
