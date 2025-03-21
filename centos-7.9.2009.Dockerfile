@@ -26,7 +26,7 @@ RUN mkdir -p /usr/local/cmake && curl -Ls https://github.com/Kitware/CMake/relea
 # RPMs
 
 RUN yum install -y sudo git curl @Development pkgconfig bison flex autoconf binutils-devel libevent-devel acl libfmt-devel libiberty-devel double-conversion-devel lz4-devel xz\
--devel libunwind-devel libdwarf-devel elfutils-libelf-devel glog-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget perl-IPC-Cmd
+-devel libunwind-devel libdwarf-devel elfutils-libelf-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget perl-IPC-Cmd
 
 # Set environment variables for rh-ruby30 to be default ruby
 RUN echo "source /opt/rh/rh-ruby30/enable" >> /etc/profile.d/rh-ruby30
