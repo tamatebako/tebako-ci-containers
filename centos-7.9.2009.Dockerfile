@@ -25,7 +25,7 @@ RUN mkdir -p /usr/local/cmake && curl -Ls https://github.com/Kitware/CMake/relea
 
 # RPMs
 
-RUN yum install -y sudo git curl @Development pkgconfig bison flex autoconf binutils-devel libevent-devel acl libfmt-devel jemalloc-devel libiberty-devel double-conversion-devel lz4-devel xz\
+RUN yum install -y sudo git curl @Development pkgconfig bison flex autoconf binutils-devel libevent-devel acl libfmt-devel libiberty-devel double-conversion-devel lz4-devel xz\
 -devel openssl11-devel openssl11-static openssl11 libunwind-devel libdwarf-devel elfutils-libelf-devel glog-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget
 
 ENV OPENSSL_ROOT_DIR=/usr/include/openssl11
@@ -33,8 +33,19 @@ ENV OPENSSL_ROOT_DIR=/usr/include/openssl11
 # Set environment variables for rh-ruby30 to be default ruby
 RUN echo "source /opt/rh/rh-ruby30/enable" >> /etc/profile.d/rh-ruby30
 
-# missing things we have to build from source
+# places to drop things we have to build from source
 RUN mkdir -p /missing/dist /missing/src
+
+# missing things we have to build from source
+ADD https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 /missing/dist/jemalloc.tar.bz2
+RUN tar xjf /missing/dist/jemalloc.tar.bz2 -C /missing/src && \
+    source /opt/rh/devtoolset-11/enable && \
+    cd /missing/src/jemalloc* && \
+    ./configure && \
+    make && \
+    make install && \
+    cd / && rm -rf /missing/src/jemalloc*
+
 ADD https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip /missing/dist/fmt.zip
 RUN unzip /missing/dist/fmt.zip -d /missing/src && \
     source /opt/rh/devtoolset-11/enable && \
