@@ -83,7 +83,7 @@ RUN unzip /missing/dist/gflags.zip -d /missing/src/ && \
     cd / && rm -rf /missing/src/gflags-*
 
 
-ADD https://github.com/google/glog/archive/refs/tags/v0.7.1.zip /missing/dist/glog.zip
+ADD https://github.com/google/glog/archive/refs/tags/v0.4.0.zip /missing/dist/glog.zip
 RUN unzip /missing/dist/glog.zip -d /missing/src/ && \
     source /opt/rh/devtoolset-11/enable && \
     cd /missing/src/glog-* && \
