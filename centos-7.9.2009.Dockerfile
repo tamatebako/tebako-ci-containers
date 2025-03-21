@@ -26,7 +26,7 @@ RUN mkdir -p /usr/local/cmake && curl -Ls https://github.com/Kitware/CMake/relea
 # RPMs
 
 RUN yum install -y sudo git curl @Development pkgconfig bison flex autoconf binutils-devel libevent-devel acl libfmt-devel libiberty-devel double-conversion-devel lz4-devel xz\
--devel libunwind-devel libdwarf-devel elfutils-libelf-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget perl-IPC-Cmd
+-devel libunwind-devel elfutils-libelf-devel libffi-devel gdbm-devel libyaml-devel ncurses-devel readline-devel rh-ruby30 utfcpp unzip wget perl-IPC-Cmd
 
 # Set environment variables for rh-ruby30 to be default ruby
 RUN echo "source /opt/rh/rh-ruby30/enable" >> /etc/profile.d/rh-ruby30
@@ -38,6 +38,17 @@ RUN mkdir -p /missing/dist /missing/src
 ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig
 
 # missing things we have to build from source
+ADD https://github.com/davea42/libdwarf-code/releases/download/v0.9.2/libdwarf-0.9.2.tar.xz /missing/dist/libdwarf.tar.xz
+RUN tar xJf /missing/dist/libdwarf.tar.xz -C /missing/src && \
+    source /opt/rh/devtoolset-11/enable && \
+    cd /missing/src/libdwarf* && \
+    ./configure && \
+    make -j$(nproc) && \
+    make check \
+    make install \
+    make installcheck \
+    cd / && rm -f /missing/src/libdwarf*
+
 ENV OPENSSL_ROOT_DIR=/usr/local/openssl3
 ADD https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz  /missing/dist/openssl.tar.gz
 RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
