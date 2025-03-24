@@ -38,6 +38,18 @@ RUN mkdir -p /missing/dist /missing/src
 ENV PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig
 
 # missing things we have to build from source
+ENV OPENSSL_ROOT_DIR=/usr/local/openssl3
+ENV PKG_CONFIG_PATH=$OPENSSL_ROOT_DIR/lib64/pkgconfig:$PKG_CONFIG_PATH
+ADD https://github.com/openssl/openssl/releases/download/openssl-3.0.16/openssl-3.0.16.tar.gz /missing/dist/openssl.tar.gz
+#ADD https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz  /missing/dist/openssl.tar.gz
+RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
+    source /opt/rh/devtoolset-11/enable && \
+    cd /missing/src/openssl-* && \
+    ./Configure --prefix=$OPENSSL_ROOT_DIR && \
+    make && \
+    make install && \
+    cd / && rm -rf /missing/src/openssl*
+
 ADD https://github.com/davea42/libdwarf-code/releases/download/v0.9.2/libdwarf-0.9.2.tar.xz /missing/dist/libdwarf.tar.xz
 RUN tar xJf /missing/dist/libdwarf.tar.xz -C /missing/src && \
     source /opt/rh/devtoolset-11/enable && \
@@ -50,16 +62,6 @@ RUN tar xJf /missing/dist/libdwarf.tar.xz -C /missing/src && \
     make installcheck && \
     yum remove -y python3 && \
     cd / && rm -rf /missing/src/libdwarf*
-
-ENV OPENSSL_ROOT_DIR=/usr/local/openssl3
-ADD https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz  /missing/dist/openssl.tar.gz
-RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
-    source /opt/rh/devtoolset-11/enable && \
-    cd /missing/src/openssl-* && \
-    ./Configure --prefix=$OPENSSL_ROOT_DIR && \
-    make && \
-    make install && \
-    cd / && rm -rf /missing/src/openssl*
 
 ADD https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.bz2 /missing/dist/boost.tar.bz2
 RUN tar xjf /missing/dist/boost.tar.bz2 -C /missing/src && \
