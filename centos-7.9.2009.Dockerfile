@@ -46,9 +46,12 @@ RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
     source /opt/rh/devtoolset-11/enable && \
     cd /missing/src/openssl-* && \
     ./Configure --prefix=$OPENSSL_ROOT_DIR && \
-    make && \
-    make install && \
-    cd / && rm -rf /missing/src/openssl*
+    make -j$(nproc) && \
+    make install_sw install_dev && \
+    cd / && rm -rf /missing/src/openssl* 
+RUN echo $OPENSSL_ROOT_DIR/lib64 > /etc/ld.so.conf.d/openssl3.conf && \
+    ldconfig && \
+    $OPENSSL_ROOT_DIR/bin/openssl version
 
 ADD https://github.com/davea42/libdwarf-code/releases/download/v0.9.2/libdwarf-0.9.2.tar.xz /missing/dist/libdwarf.tar.xz
 RUN tar xJf /missing/dist/libdwarf.tar.xz -C /missing/src && \
