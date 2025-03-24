@@ -71,7 +71,7 @@ RUN tar xjf /missing/dist/boost.tar.bz2 -C /missing/src && \
     source /opt/rh/devtoolset-11/enable && \
     cd /missing/src/boost* && \
     ./bootstrap.sh && \
-    ./b2 --without-python install && \
+    ./b2 --without-python -j$(nproc) install && \
     cd / && rm -rf /missing/src/boost*
 
 ADD https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 /missing/dist/jemalloc.tar.bz2
