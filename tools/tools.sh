@@ -57,7 +57,7 @@ install_ruby() {
   fi
   cd ruby-install-${RUBY_INSTALL_VERSION}
   make install
-  ruby-install --system ruby ${RUBY_VERSION} -- --without-gmp --disable-dtrace --disable-debug-env --disable-install-doc CC=${CC} ${RUBY_CFG_OPENSSL}
+  ruby-install --system ruby ${RUBY_VERSION} -- --without-gmp --disable-dtrace --disable-debug-env --disable-install-doc CC=${CC} #${RUBY_CFG_OPENSSL}
   popd
   rm -rf ${ruby_install}
 }
