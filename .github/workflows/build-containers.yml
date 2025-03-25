@@ -57,6 +57,7 @@ jobs:
         container:
           - 'ubuntu-20.04'
           - 'alpine-3.17'
+          - 'centos-7.9.2009'
         architecture:
           - { host: 'ubuntu-22.04', platform: linux/amd64, suffix: 'x64', suffix2: 'amd64' }
           - { host: 'ubuntu-22.04-arm', platform: linux/arm64, suffix: 'arm64', suffix2: 'arm64' }
