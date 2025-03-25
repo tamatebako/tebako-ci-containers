@@ -51,9 +51,13 @@ install_ruby() {
   pushd ${ruby_install}
   wget -nv https://github.com/postmodern/ruby-install/releases/download/v${RUBY_INSTALL_VERSION}/ruby-install-${RUBY_INSTALL_VERSION}.tar.gz && \
   tar -xzvf ruby-install-${RUBY_INSTALL_VERSION}.tar.gz
+  if [ -n "$OPENSSL_ROOT_DIR" ]
+  then
+      RUBY_CFG_OPENSSL="--with-openssl-dir=${OPENSSL_ROOT_DIR}"
+  fi
   cd ruby-install-${RUBY_INSTALL_VERSION}
   make install
-  ruby-install --system ruby ${RUBY_VERSION} -- --without-gmp --disable-dtrace --disable-debug-env --disable-install-doc CC=${CC}
+  ruby-install --system ruby ${RUBY_VERSION} -- --without-gmp --disable-dtrace --disable-debug-env --disable-install-doc CC=${CC} #${RUBY_CFG_OPENSSL}
   popd
   rm -rf ${ruby_install}
 }
