@@ -73,6 +73,9 @@ RUN tar xjf /missing/dist/boost.tar.bz2 -C /missing/src && \
     ./bootstrap.sh && \
     ./b2 --without-python -j$(nproc) install && \
     cd / && rm -rf /missing/src/boost*
+RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/usrlocal.conf && \
+    echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf && \
+    ldconfig
 
 ADD https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 /missing/dist/jemalloc.tar.bz2
 RUN tar xjf /missing/dist/jemalloc.tar.bz2 -C /missing/src && \
