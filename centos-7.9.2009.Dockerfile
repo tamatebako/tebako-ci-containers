@@ -45,7 +45,7 @@ ADD https://github.com/openssl/openssl/releases/download/openssl-3.0.16/openssl-
 RUN  tar xzf /missing/dist/openssl.tar.gz -C /missing/src/ && \
     source /opt/rh/devtoolset-11/enable && \
     cd /missing/src/openssl-* && \
-    ./Configure --prefix=$OPENSSL_ROOT_DIR && \
+    ./Configure no-shared --prefix=$OPENSSL_ROOT_DIR && \
     make -j$(nproc) && \
     make install_sw install_dev && \
     cd / && rm -rf /missing/src/openssl* 
