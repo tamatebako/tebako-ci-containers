@@ -132,7 +132,7 @@ RUN unzip /missing/dist/glog.zip -d /missing/src/ && \
 # Clone the utfcpp repository and copy headers to the include path
 RUN git clone https://github.com/nemtrif/utfcpp.git /usr/local/src/utfcpp && \
     mkdir -p /usr/local/include/utfcpp && \
-    cp -r /usr/local/src/utfcpp/source/* /usr/local/include/utfcpp/
+    cp -r /usr/local/src/utfcpp/source/* /usr/local/include/
 
 # Optional: Clean up unnecessary files
 RUN rm -rf /usr/local/src/utfcpp && \
