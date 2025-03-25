@@ -155,9 +155,13 @@ ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
 RUN gem install tebako
-#RUN tebako setup -R 3.3.7
+COPY tebako-gem-centos.patch /tmp/
+RUN pushd $(dirname $(gem which tebako))/.. && \
+    patch -p1 < /tmp/tebako-gem-centos.patch && \
+    popd
+RUN tebako setup -R 3.3.7
+RUN tebako press -R 3.3.7 -r /root/test -e tebako-test-run.rb -o ruby-3.3.7-package
 #RUN tebako setup -R 3.4.1
-#RUN tebako press -R 3.3.7 -r /root/test -e tebako-test-run.rb -o ruby-3.3.7-package
 #RUN tebako press -R 3.4.1 -r /root/test -e tebako-test-run.rb -o ruby-3.4.1-package
 # rm ruby-*-package
 

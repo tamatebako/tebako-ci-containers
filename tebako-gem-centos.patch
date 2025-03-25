@@ -1,0 +1,22 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f42fccf..f718c94 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -178,7 +178,7 @@ string(CONCAT RUBY_API_VER ${RUBY_VER_BASE} ".0")
+ #  list(GET LIBDWARFS_WR_VER_COMPONENTS 2 LIBDWARFS_WR_VER_PATCH)
+ #  set (LIBDWARFS_WR_VER_M ${LIBDWARFS_WR_VER_MAJOR}.${LIBDWARFS_WR_VER_MINOR}.${LIBDWARFS_WR_VER_PATCH})
+ #else(DWARFS_PRELOAD)
+-def_ext_prj_g(DWARFS_WR "v0.10.1")
++def_ext_prj_g(DWARFS_WR "centos7.9.2009")
+ #endif(DWARFS_PRELOAD)
+ 
+ def_ext_prj_g(PATCHELF "65e14792061c298f1d2bc44becd48a10cbf0bc81")
+@@ -277,7 +277,7 @@ else(DWARFS_PRELOAD)
+   ExternalProject_Add(${DWARFS_WR_PRJ}
+     GIT_SHALLOW true
+     PREFIX ${DEPS}
+-    GIT_REPOSITORY https://github.com/tamatebako/libdwarfs.git
++    GIT_REPOSITORY https://github.com/cleeland/libdwarfs.git
+     GIT_TAG ${DWARFS_WR_TAG}
+     SOURCE_DIR ${DWARFS_WR_SOURCE_DIR}
+     BINARY_DIR ${DWARFS_WR_BINARY_DIR}
