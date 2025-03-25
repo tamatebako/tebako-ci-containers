@@ -58,7 +58,7 @@ RUN tar xJf /missing/dist/libdwarf.tar.xz -C /missing/src && \
     source /opt/rh/devtoolset-11/enable && \
     yum install -y python3 && \
     cd /missing/src/libdwarf* && \
-    ./configure && \
+    ./configure --enable-static --disable-shared && \
     make -j$(nproc) && \
     make check && \
     make install && \
