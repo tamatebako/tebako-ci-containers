@@ -28,17 +28,24 @@ FROM alpine:3.17
 ENV TZ=Etc/UTC
 ENV ARCH=x64
 
+# Toolchain note: alpine 3.17 ships gcc-12 and clang-15 (with gcc-12's
+# libstdc++), both of which compile the C++20 tebako codebase today, so no
+# toolchain change is needed here. Base kept at 3.17: the container tag and
+# downstream tebako CI (tebako-alpine-3.17-dev images) are tied to it.
+# Pruned folly-era packages (fmt, gflags, libdwarf, libunwind): dwarfs builds
+# fmt itself via FetchContent, libdwarfs builds glog/gflags/double-conversion
+# from source when missing, and FOLLY_NO_EXCEPTION_TRACER=ON makes
+# libdwarf/libunwind unused. boost/libevent stay (hard build requirements).
 RUN apk --no-cache --upgrade add build-base cmake git bash sudo  \
     autoconf boost-static boost-dev flex-dev bison make clang    \
     binutils-dev libevent-dev acl-dev sed python3 pkgconfig curl \
     lz4-dev openssl-dev zlib-dev xz ninja zip unzip tar xz-dev   \
-    libunwind-dev libdwarf-dev gflags-dev elfutils-dev gcompat   \
-    libevent-static openssl-libs-static lz4-static libffi-dev    \
-    zlib-static libunwind-static acl-static fmt-dev xz-static    \
-    gdbm-dev yaml-dev yaml-static ncurses-dev ncurses-static     \
-    readline-dev readline-static p7zip ruby-dev  jemalloc-dev    \
-    gettext-dev gperf brotli-dev brotli-static clang libxslt-dev \
-    libxslt-static
+    elfutils-dev gcompat libffi-dev xz-static                    \
+    libevent-static openssl-libs-static lz4-static               \
+    zlib-static acl-static gdbm-dev yaml-dev yaml-static         \
+    ncurses-dev ncurses-static p7zip ruby-dev jemalloc-dev       \
+    readline-dev readline-static gettext-dev gperf               \
+    brotli-dev brotli-static libxslt-dev libxslt-static
 
 ENV CC=clang
 ENV CXX=clang++
@@ -46,11 +53,13 @@ ENV CXX=clang++
 ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
+# TODO(tebako v0.15.0): preinstall prebuilt libtfs v0.12.0 here once the
+# libtfs release exists (part 2 of the ci-containers refresh).
 RUN gem install tebako && \
     tebako setup -R 3.3.7 && \
-    tebako setup -R 3.4.1 && \
+    tebako setup -R 3.4.2 && \
     tebako press -R 3.3.7 -r /root/test -e tebako-test-run.rb -o ruby-3.3.7-package && \
-    tebako press -R 3.4.1 -r /root/test -e tebako-test-run.rb -o ruby-3.4.1-package && \
+    tebako press -R 3.4.2 -r /root/test -e tebako-test-run.rb -o ruby-3.4.2-package && \
     rm ruby-*-package
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"

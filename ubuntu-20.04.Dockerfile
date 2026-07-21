@@ -29,18 +29,34 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ARG ARCH=x64
 
+# Kept boost/libevent: still required to build the current tebako gem
+# (dwarfs tebako-v0.9.0 does find_package(Boost REQUIRED) and vendored folly
+# has a hard libevent dependency with no source-build fallback).
+# Pruned folly-era packages (libfmt, libdouble-conversion, libgoogle-glog,
+# libdwarf, libiberty, libunwind): dwarfs builds fmt itself via FetchContent,
+# libdwarfs builds glog/gflags/double-conversion from source when missing,
+# and FOLLY_NO_EXCEPTION_TRACER=ON makes libdwarf/libiberty/libunwind unused.
 RUN apt-get -y update && \
     apt-get -y install sudo wget git make pkg-config clang-12 clang++-12      \
-    autoconf binutils-dev libevent-dev acl-dev libfmt-dev libjemalloc-dev     \
-    libdouble-conversion-dev libiberty-dev liblz4-dev liblzma-dev libssl-dev  \
+    autoconf binutils-dev libevent-dev acl-dev libjemalloc-dev                \
+    liblz4-dev liblzma-dev libssl-dev libbrotli-dev libelf-dev                \
     libboost-filesystem-dev libboost-program-options-dev libboost-system-dev  \
-    libboost-iostreams-dev  libboost-date-time-dev libboost-context-dev       \
-    libboost-regex-dev libboost-thread-dev libbrotli-dev libunwind-dev        \
-    libdwarf-dev libelf-dev libgoogle-glog-dev libffi-dev libgdbm-dev         \
-    libyaml-dev libncurses-dev libreadline-dev libutfcpp-dev libstdc++-10-dev
+    libboost-iostreams-dev libboost-date-time-dev libboost-context-dev        \
+    libboost-regex-dev libboost-thread-dev libffi-dev libgdbm-dev             \
+    libyaml-dev libncurses-dev libreadline-dev libutfcpp-dev libstdc++-10-dev \
+    curl zip unzip ninja-build                                                \
+    ca-certificates gnupg lsb-release software-properties-common
 
-ENV CC=clang-12
-ENV CXX=clang++-12
+# C++20 toolchain for tebako v0.15.0 (libtfs v0.12.0, vcpkg): LLVM 18 from
+# apt.llvm.org, installed alongside the stock clang-12 and made the default.
+# The ubuntu:focal base (glibc 2.31 floor) is intentionally unchanged.
+RUN wget -q https://apt.llvm.org/llvm.sh && \
+    chmod +x llvm.sh && \
+    ./llvm.sh 18 && \
+    rm -f llvm.sh
+
+ENV CC=clang-18
+ENV CXX=clang++-18
 
 COPY tools /opt/tools
 
@@ -50,11 +66,13 @@ RUN /opt/tools/tools.sh install_cmake && \
 ENV TEBAKO_PREFIX=/root/.tebako
 COPY test /root/test
 
+# TODO(tebako v0.15.0): preinstall prebuilt libtfs v0.12.0 here once the
+# libtfs release exists (part 2 of the ci-containers refresh).
 RUN gem install tebako && \
     tebako setup -R 3.3.7 && \
-    tebako setup -R 3.4.1 && \
+    tebako setup -R 3.4.2 && \
     tebako press -R 3.3.7 -r /root/test -e tebako-test-run.rb -o ruby-3.3.7-package && \
-    tebako press -R 3.4.1 -r /root/test -e tebako-test-run.rb -o ruby-3.4.1-package && \
+    tebako press -R 3.4.2 -r /root/test -e tebako-test-run.rb -o ruby-3.4.2-package && \
     rm ruby-*-package
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
