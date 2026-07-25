@@ -51,13 +51,14 @@ RUN apk --no-cache --upgrade add build-base cmake git bash sudo  \
 ENV CC=clang
 ENV CXX=clang++
 
-# The tebako-runtime-ruby build tooling (pinned to the runtime contract
-# version the image is built for). Runtime-ruby CI legs may mount their own
+# The tebako-runtime-ruby build tooling. Pinned to a main-branch commit:
+# no tag carries the tooling yet (v0.15.9 predates it) — move to a tag once
+# tebako-runtime-ruby releases one. Runtime-ruby CI legs may mount their own
 # checkout at /mnt/w and call /mnt/w/tools/build_runtime; this baked copy is
 # what the warm-up below and /opt/verify-image.sh exercise.
-ARG TEBAKO_RUNTIME_RUBY_REF=v0.15.9
+ARG TEBAKO_RUNTIME_RUBY_REF=1e6500ce6a64dc8c2e4905f0a7e73fbe2bd471c4
 RUN curl -sSL -o /tmp/tebako-runtime-ruby.tar.gz \
-      https://codeload.github.com/tamatebako/tebako-runtime-ruby/tar.gz/refs/tags/${TEBAKO_RUNTIME_RUBY_REF} && \
+      https://codeload.github.com/tamatebako/tebako-runtime-ruby/tar.gz/${TEBAKO_RUNTIME_RUBY_REF} && \
     mkdir -p /opt/tebako-runtime-ruby && \
     tar -xzf /tmp/tebako-runtime-ruby.tar.gz -C /opt/tebako-runtime-ruby --strip-components=1 && \
     rm -f /tmp/tebako-runtime-ruby.tar.gz
