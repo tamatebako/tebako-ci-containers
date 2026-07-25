@@ -44,7 +44,22 @@ The `--patchelf` option enables the creation of packages that are forward-compat
 This container is based on **Alpine Linux 3.17**, offering an environment for packaging applications for systems that use the https://musl.libc.org[`musl` implementation of the C standard library].
 
 Both containers are available on the **Docker Hub** and **GitHub Container Registry (GHCR)** for **x86_64 (amd64)** and **aarch64 (arm64)** architectures, with multi-architecture manifests.
-These containers come preinstalled with Tebako packaging environments for Ruby versions **3.3.7** and **3.4.2**.
+
+.Image contents (new build model)
+[NOTE]
+====
+The images follow the new tebako build model: a C++20 toolchain (LLVM-18 on
+Ubuntu, clang-15 on Alpine), cmake and ruby, the prebuilt libtfs/libtfs-deps
+packages, and the https://github.com/tamatebako/tebako-runtime-ruby[tebako-runtime-ruby]
+build tooling at `/opt/tebako-runtime-ruby` (pinned via `TEBAKO_RUNTIME_RUBY_REF`).
+A build-time warm-up runs `tools/build_runtime --ruby 3.3.7` end-to-end and
+seeds `/root/.build`, so `tools/build_runtime --prefix /root/.build` reuses
+the fetched dependencies. The **tebako gem is no longer preinstalled** — to
+package an application, `gem install tebako` first (the gem downloads
+prebuilt runtimes at press time); to build runtimes, call
+`/opt/tebako-runtime-ruby/tools/build_runtime` (or mount a
+tebako-runtime-ruby checkout and call `/mnt/w/tools/build_runtime`).
+====
 
 == Using the Tebako Containers
 
