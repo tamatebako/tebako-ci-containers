@@ -76,15 +76,18 @@ COPY test/verify-image.sh /opt/verify-image.sh
 
 # Warm-up: build one runtime package end-to-end with the new model. This
 # validates the toolchain, the libtfs prebuilt-package fetch (SHA256-verified)
-# and the patched-ruby build, and seeds /root/.build (deps + download cache)
-# that runtime-ruby legs reuse via --prefix /root/.build. The package is
-# executed without an image to prove the produced binary runs (it must print
-# the Tebako handoff error and exit non-zero), then removed.
+# and the patched-ruby build, and seeds /root/.build — the prefix runtime-ruby
+# legs pass as --prefix /root/.build ("the container image is the cache").
+# The produced package is executed without an image to prove the binary runs
+# (it must print the Tebako handoff error and exit non-zero), then removed
+# together with the top-level CMake build dir: what stays in /root/.build is
+# autotools/copied state only (libtfs deployment, ruby build tree, download
+# caches), nothing that references the baked tooling path.
 RUN ruby /opt/tebako-runtime-ruby/tools/build_runtime --ruby 3.3.7 \
       --prefix /root/.build --output /root/warmup/tebako-runtime-warmup --patchelf && \
     test -x /root/warmup/tebako-runtime-warmup && \
     /root/warmup/tebako-runtime-warmup 2>&1 | grep -q "Tebako" && \
-    rm -rf /root/warmup
+    rm -rf /root/warmup /root/.build/o
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
 CMD ["bash"]
