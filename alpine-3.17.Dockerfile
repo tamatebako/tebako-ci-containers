@@ -56,7 +56,7 @@ ENV CXX=clang++
 # checkout at /mnt/w and call /mnt/w/tools/build_runtime; this baked copy is
 # what the warm-up below and /opt/verify-image.sh exercise.
 ARG TEBAKO_RUNTIME_RUBY_REF=v0.15.9
-RUN wget -q -O /tmp/tebako-runtime-ruby.tar.gz \
+RUN curl -sSL -o /tmp/tebako-runtime-ruby.tar.gz \
       https://codeload.github.com/tamatebako/tebako-runtime-ruby/tar.gz/refs/tags/${TEBAKO_RUNTIME_RUBY_REF} && \
     mkdir -p /opt/tebako-runtime-ruby && \
     tar -xzf /tmp/tebako-runtime-ruby.tar.gz -C /opt/tebako-runtime-ruby --strip-components=1 && \
