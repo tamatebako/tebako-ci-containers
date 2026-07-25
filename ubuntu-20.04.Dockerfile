@@ -37,11 +37,13 @@ ARG ARCH=x64
 # (boost, libevent, libdwarf/libelf, double-conversion, glog, fmt, utfcpp,
 # lz4/lzma/brotli dev packages) are gone; what remains is the toolchain,
 # the autotools chain (patchelf bootstraps from git), and the dev packages
-# the ruby build itself links against.
+# the ruby build links STATICALLY against (libacl.a and libjemalloc.a
+# included — miniruby's link line references both).
 RUN apt-get -y update && \
     apt-get -y install sudo wget git make pkg-config clang-12 clang++-12   \
     autoconf automake binutils libffi-dev libgdbm-dev zlib1g-dev           \
     libyaml-dev libncurses-dev libreadline-dev libssl-dev libstdc++-10-dev \
+    acl-dev libjemalloc-dev                                                \
     curl zip unzip ninja-build                                             \
     ca-certificates gnupg lsb-release software-properties-common
 
