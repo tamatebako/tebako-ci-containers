@@ -29,27 +29,27 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 ARG ARCH=x64
 
-# Kept boost/libevent: still required to build the current tebako gem
-# (dwarfs tebako-v0.9.0 does find_package(Boost REQUIRED) and vendored folly
-# has a hard libevent dependency with no source-build fallback).
-# Pruned folly-era packages (libfmt, libdouble-conversion, libgoogle-glog,
-# libdwarf, libiberty, libunwind): dwarfs builds fmt itself via FetchContent,
-# libdwarfs builds glog/gflags/double-conversion from source when missing,
-# and FOLLY_NO_EXCEPTION_TRACER=ON makes libdwarf/libiberty/libunwind unused.
+# New build model (tebako-ci-containers item 14): the image serves
+# tebako-runtime-ruby's tools/build_runtime — a CMake driver that builds the
+# runtime package from the pre-patched ruby source (tamatebako/ruby release)
+# against the PREBUILT libtfs/libtfs-deps packages. There is no tebako gem
+# and no patch layer in the image, so the dwarfs-era build dependencies
+# (boost, libevent, libdwarf/libelf, double-conversion, glog, fmt, utfcpp,
+# lz4/lzma/brotli dev packages) are gone; what remains is the toolchain,
+# the autotools chain (patchelf bootstraps from git), and the dev packages
+# the ruby build links STATICALLY against (libacl.a and libjemalloc.a
+# included — miniruby's link line references both).
 RUN apt-get -y update && \
-    apt-get -y install sudo wget git make pkg-config clang-12 clang++-12      \
-    autoconf binutils-dev libevent-dev acl-dev libjemalloc-dev                \
-    liblz4-dev liblzma-dev libssl-dev libbrotli-dev libelf-dev                \
-    libboost-filesystem-dev libboost-program-options-dev libboost-system-dev  \
-    libboost-iostreams-dev libboost-date-time-dev libboost-context-dev        \
-    libboost-regex-dev libboost-thread-dev libffi-dev libgdbm-dev             \
-    libyaml-dev libncurses-dev libreadline-dev libutfcpp-dev libstdc++-10-dev \
-    curl zip unzip ninja-build                                                \
+    apt-get -y install sudo wget git make pkg-config clang-12 clang++-12   \
+    autoconf automake binutils libffi-dev libgdbm-dev zlib1g-dev           \
+    libyaml-dev libncurses-dev libreadline-dev libssl-dev libstdc++-10-dev \
+    acl-dev libjemalloc-dev                                                \
+    curl zip unzip ninja-build                                             \
     ca-certificates gnupg lsb-release software-properties-common
 
-# C++20 toolchain for tebako v0.15.0 (libtfs v0.12.0, vcpkg): LLVM 18 from
-# apt.llvm.org, installed alongside the stock clang-12 and made the default.
-# The ubuntu:focal base (glibc 2.31 floor) is intentionally unchanged.
+# C++20 toolchain for the libtfs v0.13.0 contract: LLVM 18 from apt.llvm.org,
+# installed alongside the stock clang-12 and made the default. The ubuntu:focal
+# base (glibc 2.31 floor) is intentionally unchanged.
 RUN wget -q https://apt.llvm.org/llvm.sh && \
     chmod +x llvm.sh && \
     ./llvm.sh 18 && \
@@ -63,22 +63,34 @@ COPY tools /opt/tools
 RUN /opt/tools/tools.sh install_cmake && \
     /opt/tools/tools.sh install_ruby
 
-ENV TEBAKO_PREFIX=/root/.tebako
-COPY test /root/test
+# The tebako-runtime-ruby build tooling. Pinned to a main-branch commit:
+# no tag carries the tooling yet (v0.15.9 predates it) — move to a tag once
+# tebako-runtime-ruby releases one. Runtime-ruby CI legs may mount their own
+# checkout at /mnt/w and call /mnt/w/tools/build_runtime; this baked copy is
+# what the warm-up below and /opt/verify-image.sh exercise.
+ARG TEBAKO_RUNTIME_RUBY_REF=1e6500ce6a64dc8c2e4905f0a7e73fbe2bd471c4
+RUN wget -q -O /tmp/tebako-runtime-ruby.tar.gz \
+      https://codeload.github.com/tamatebako/tebako-runtime-ruby/tar.gz/${TEBAKO_RUNTIME_RUBY_REF} && \
+    mkdir -p /opt/tebako-runtime-ruby && \
+    tar -xzf /tmp/tebako-runtime-ruby.tar.gz -C /opt/tebako-runtime-ruby --strip-components=1 && \
+    rm -f /tmp/tebako-runtime-ruby.tar.gz
 
-# TODO(tebako v0.15.0): preinstall prebuilt libtfs v0.12.0 here once the
-# libtfs release exists (part 2 of the ci-containers refresh).
-# TODO(tebako v0.15.0): restore strict warm-up — the current gem (v0.14.0)
-# builds the old folly/dwarfs stack which breaks on several platforms
-# (that's the flakiness the libtfs migration removes); tolerated until
-# the v0.15.0 gem + prebuilt libtfs land.
-RUN gem install tebako && \
-    (tebako setup -R 3.3.7 && \
-    tebako setup -R 3.4.2 && \
-    tebako press -R 3.3.7 -r /root/test -e tebako-test-run.rb -o ruby-3.3.7-package && \
-    tebako press -R 3.4.2 -r /root/test -e tebako-test-run.rb -o ruby-3.4.2-package && \
-    rm ruby-*-package \
-    || echo "WARM-UP FAILED (old folly engine; tolerated until tebako v0.15.0 with prebuilt libtfs)")
+COPY test/verify-image.sh /opt/verify-image.sh
+
+# Warm-up: build one runtime package end-to-end with the new model. This
+# validates the toolchain, the libtfs prebuilt-package fetch (SHA256-verified)
+# and the patched-ruby build, and seeds /root/.build — the prefix runtime-ruby
+# legs pass as --prefix /root/.build ("the container image is the cache").
+# The produced package is executed without an image to prove the binary runs
+# (it must print the Tebako handoff error and exit non-zero), then removed
+# together with the top-level CMake build dir: what stays in /root/.build is
+# autotools/copied state only (libtfs deployment, ruby build tree, download
+# caches), nothing that references the baked tooling path.
+RUN ruby /opt/tebako-runtime-ruby/tools/build_runtime --ruby 3.3.7 \
+      --prefix /root/.build --output /root/warmup/tebako-runtime-warmup --patchelf && \
+    test -x /root/warmup/tebako-runtime-warmup && \
+    /root/warmup/tebako-runtime-warmup 2>&1 | grep -q "Tebako" && \
+    rm -rf /root/warmup /root/.build/o
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
 CMD ["bash"]

@@ -28,20 +28,21 @@ FROM alpine:3.17
 ENV TZ=Etc/UTC
 ENV ARCH=x64
 
+# New build model (tebako-ci-containers item 14): the image serves
+# tebako-runtime-ruby's tools/build_runtime against the PREBUILT libtfs /
+# libtfs-deps musl packages — no tebako gem, no patch layer. The dwarfs-era
+# packages (boost, libevent) are gone; the musl static dev packages the
+# patched-ruby build links against stay.
 # Toolchain note: alpine 3.17 ships gcc-12 and clang-15 (with gcc-12's
 # libstdc++), both of which compile the C++20 tebako codebase today, so no
 # toolchain change is needed here. Base kept at 3.17: the container tag and
 # downstream tebako CI (tebako-alpine-3.17-dev images) are tied to it.
-# Pruned folly-era packages (fmt, gflags, libdwarf, libunwind): dwarfs builds
-# fmt itself via FetchContent, libdwarfs builds glog/gflags/double-conversion
-# from source when missing, and FOLLY_NO_EXCEPTION_TRACER=ON makes
-# libdwarf/libunwind unused. boost/libevent stay (hard build requirements).
 RUN apk --no-cache --upgrade add build-base cmake git bash sudo  \
-    autoconf boost-static boost-dev flex-dev bison make clang    \
-    binutils-dev libevent-dev acl-dev sed python3 pkgconfig curl \
+    autoconf automake flex-dev bison make clang                  \
+    binutils-dev acl-dev sed python3 pkgconfig curl              \
     lz4-dev openssl-dev zlib-dev xz ninja zip unzip tar xz-dev   \
     elfutils-dev gcompat libffi-dev xz-static                    \
-    libevent-static openssl-libs-static lz4-static               \
+    openssl-libs-static lz4-static                               \
     zlib-static acl-static gdbm-dev yaml-dev yaml-static         \
     ncurses-dev ncurses-static p7zip ruby-dev jemalloc-dev       \
     readline-dev readline-static gettext-dev gperf               \
@@ -50,22 +51,35 @@ RUN apk --no-cache --upgrade add build-base cmake git bash sudo  \
 ENV CC=clang
 ENV CXX=clang++
 
-ENV TEBAKO_PREFIX=/root/.tebako
-COPY test /root/test
+# The tebako-runtime-ruby build tooling. Pinned to a main-branch commit:
+# no tag carries the tooling yet (v0.15.9 predates it) — move to a tag once
+# tebako-runtime-ruby releases one. Runtime-ruby CI legs may mount their own
+# checkout at /mnt/w and call /mnt/w/tools/build_runtime; this baked copy is
+# what the warm-up below and /opt/verify-image.sh exercise.
+ARG TEBAKO_RUNTIME_RUBY_REF=1e6500ce6a64dc8c2e4905f0a7e73fbe2bd471c4
+RUN curl -sSL -o /tmp/tebako-runtime-ruby.tar.gz \
+      https://codeload.github.com/tamatebako/tebako-runtime-ruby/tar.gz/${TEBAKO_RUNTIME_RUBY_REF} && \
+    mkdir -p /opt/tebako-runtime-ruby && \
+    tar -xzf /tmp/tebako-runtime-ruby.tar.gz -C /opt/tebako-runtime-ruby --strip-components=1 && \
+    rm -f /tmp/tebako-runtime-ruby.tar.gz
 
-# TODO(tebako v0.15.0): preinstall prebuilt libtfs v0.12.0 here once the
-# libtfs release exists (part 2 of the ci-containers refresh).
-# TODO(tebako v0.15.0): restore strict warm-up — the current gem (v0.14.0)
-# builds the old folly/dwarfs stack which breaks on several platforms
-# (that's the flakiness the libtfs migration removes); tolerated until
-# the v0.15.0 gem + prebuilt libtfs land.
-RUN gem install tebako && \
-    (tebako setup -R 3.3.7 && \
-    tebako setup -R 3.4.2 && \
-    tebako press -R 3.3.7 -r /root/test -e tebako-test-run.rb -o ruby-3.3.7-package && \
-    tebako press -R 3.4.2 -r /root/test -e tebako-test-run.rb -o ruby-3.4.2-package && \
-    rm ruby-*-package \
-    || echo "WARM-UP FAILED (old folly engine; tolerated until tebako v0.15.0 with prebuilt libtfs)")
+COPY test/verify-image.sh /opt/verify-image.sh
+
+# Warm-up: build one runtime package end-to-end with the new model (no
+# --patchelf: that is a glibc-only step). This validates the toolchain, the
+# libtfs prebuilt-package fetch (SHA256-verified) and the patched-ruby build,
+# and seeds /root/.build — the prefix runtime-ruby legs pass as --prefix
+# /root/.build ("the container image is the cache"). The produced package is
+# executed without an image to prove the binary runs (it must print the
+# Tebako handoff error and exit non-zero), then removed together with the
+# top-level CMake build dir: what stays in /root/.build is autotools/copied
+# state only (libtfs deployment, ruby build tree, download caches), nothing
+# that references the baked tooling path.
+RUN ruby /opt/tebako-runtime-ruby/tools/build_runtime --ruby 3.3.7 \
+      --prefix /root/.build --output /root/warmup/tebako-runtime-warmup && \
+    test -x /root/warmup/tebako-runtime-warmup && \
+    /root/warmup/tebako-runtime-warmup 2>&1 | grep -q "Tebako" && \
+    rm -rf /root/warmup /root/.build/o
 
 ENV PS1="\[\]\[\e]0;\u@\h: \w\a\]\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ \[\]"
 CMD ["bash"]
