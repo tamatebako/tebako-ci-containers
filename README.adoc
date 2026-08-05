@@ -1,32 +1,137 @@
-= Tebako Docker Containers
+= Tebako builder images (`tpkg-builder-<triplet>`)
 
-== What is Tebako?
+One builder image per (triplet × toolchain family), produced by this one
+repo, sha-pinnable, consumed by every slice-producing repo in the tebako
+v2 ecosystem (the runtime factory, the feedstocks, the crypto payload) —
+and by third-party developers building their own `.tfs` slices with zero
+tebako-side toolchain knowledge (TODO.v2-1/13).
 
-Tebako is an executable packager designed to simplify the process of packaging applications that rely on an interpretive runtime, making distribution easier.
-It packages a set of files into a DwarFS file system for read-only purposes.
+The target shape of a slice build — one primitive, identical on a
+developer laptop and in GHA (TODO.v2-1/13):
 
-For more details, visit the https://www.tebako.org[Tebako website].
+[source,sh]
+----
+docker run --rm -v $PWD:/w ghcr.io/tamatebako/tpkg-builder-<triplet>@sha256:… tpkg build
+# out: <name>-<version>-<triplet>.tfs + payload manifest (+ sha256)
+----
 
-== Pre-built Containers
+(`tpkg build` is the plan's target verb; today the image ships the baked
+`tfs` imager, `tebako-pkg`, `tebako`, `tebako-shim` and
+`tebako-bootstrap` on PATH, which is what the current feedstock tooling
+calls.)
 
-Tebako packages for Linux systems must be created on the same architecture and standard library implementation as the target system. For example:
+A user of these images needs Docker and nothing else: the toolchain, the
+vcpkg dependency trees, the pinned Rust, and the tebako product binaries
+are baked image layers.
 
-- **x86_64/aarch64 packages** require **x86_64/aarch64 systems**, respectively.
-- Packages compatible with **GNU/musl Linux** must be created in **GNU/musl environments**.
+== The image family
 
-Installing Tebako on different Linux configurations can be cumbersome, and our testing is limited to a specific set of Ubuntu and Alpine configurations.
+[cols="2,3", options="header"]
+|===
+| Image (ghcr.io/tamatebako/…) | Base / contract
 
-== Available Container Tags
+| `tpkg-builder-x86_64-linux-gnu`
+| `ubuntu:20.04` — the glibc 2.31 floor (spec 19 §3), gcc-11 default, clang-19/libclang for bindgen, cmake 3.31.8, patchelf
 
-Tebako containers are available to support packaging for both GNU and musl target environments. The currently available tags are:
+| `tpkg-builder-aarch64-linux-gnu`
+| same, arm64
 
-=== `ubuntu-20.04`
+| `tpkg-builder-x86_64-linux-musl`
+| `alpine:3.21` — native musl toolchain, `clang19-libclang` for bindgen, `RUSTFLAGS=-C target-feature=-crt-static` and `VCPKG_FORCE_SYSTEM_BINARIES=1` baked
 
-This container is based on **Ubuntu 20.04 LTS**, providing an environment for packaging applications for GNU systems that use the https://sourceware.org/glibc[`glibc` implementation of the C standard library].
+| `tpkg-builder-aarch64-linux-musl`
+| same, arm64
+|===
 
-The `--patchelf` option enables the creation of packages that are forward-compatible with GNU Linux distributions running GLIBC version 2.31 and above.
+Each triplet is its own registry repository, so every tag is unambiguous
+(the v1 images' arch-suffixed tags + manifest step is gone).
 
-.Minimum versions of GLIBC Linux distributions that support Tebako packages with forward portability
+.Tags per publish
+- `v1.<YYYY.MM.DD>` — dated, immutable by convention
+- `v1`, `latest` — moving
+- `sha-<shortsha>` — the producing commit
+
+Consumers pin by digest (`…@sha256:…`); the publish workflow prints the
+digest of every leg to its run summary.
+
+=== Windows and macOS are runner-native, on purpose
+
+There are no `tpkg-builder-windows-*` / `tpkg-builder-macos-*` images.
+GHA cannot run Windows containers that match our native PE/ucrt64 build,
+and macOS containers do not exist at all. Their provisioning is already
+hermetic in practice (the vcpkg baseline restore + a closed PATH), so
+their lever is caching, not containers. This is the documented exception,
+not a gap (TODO.v2-1/13 "The model").
+
+== What is baked
+
+* The pinned Rust toolchain (`RUST_VERSION`, currently 1.94.1) with
+  clippy + rustfmt, in uid-agnostic homes (`/opt/rustup`, `/opt/cargo`).
+* vcpkg at the pinned baseline (`/opt/vcpkg`), with the two installed
+  trees as image layers at their canonical absolute paths —
+  the image layer *is* the cache; vcpkg trees embed absolute paths, so
+  the restore script / manifest-hash tarball / canonical-root map
+  machinery of the baseline era does not exist here:
+** `/opt/vcpkg-installed/dwarfs/<triplet>` — the dwarfs-t dependency
+   closure (boost, openssl, flatbuffers, fmt, …)
+** `/opt/vcpkg-installed/sqfs/<triplet>` — squashfs-tools-ng
+* The tebako product binaries at the pinned release
+  (`tebako-bootstrap`, `tfs`, `tebako-pkg`, `tebako`, `tebako-shim` in
+  `/usr/local/bin`) and the product checkout at `/opt/tebako-rs`
+  (`tools/stage_link_unit`, the sqfs-sys manifest).
+* The dwarfs-rs checkout (with its dwarfs-t submodule) at
+  `/opt/dwarfs-rs`.
+* The runtime-factory tooling (`tools/build_runtime`) at
+  `/opt/tebako-runtime-ruby`, plus the full ruby-build dependency set —
+  a factory POSIX leg runs link-unit staging, the ruby build, and image
+  packaging inside this one image.
+* The environment contract as baked `ENV`:
+  `VCPKG_ROOT`, `DWARFS_RS_VCPKG_ROOT`, `DWARFS_RS_VCPKG_INSTALLED_DIR`,
+  `DWARFS_RS_VCPKG_TRIPLET`, `SQFS_SYS_VCPKG_INSTALLED_DIR`,
+  `SQFS_SYS_VCPKG_TRIPLET`, `CARGO_NET_GIT_FETCH_WITH_CLI=true`,
+  `VCPKG_DEFAULT_BINARY_CACHE` — and per family: `LIBCLANG_PATH`,
+  `CFLAGS`/`CXXFLAGS=-pthread` (gnu), `RUSTFLAGS`,
+  `VCPKG_FORCE_SYSTEM_BINARIES` (musl).
+
+The pins live in link:tpkg-builder/pins.env[`tpkg-builder/pins.env`]
+with their upstream owners named; the bake asserts the vcpkg baseline
+against `dwarfs-t/vcpkg.json` and fails on drift. The image is
+self-describing: the same file is baked at `/opt/tpkg-builder/pins.env`,
+and consumer repos match their dwarfs-rs / tebako checkouts to it when
+they want a full cache hit (a moved dwarfs-t manifest still builds —
+drifted ports rebuild in-leg — just slower).
+
+== Using an image
+
+CI shape (what the feedstock and factory legs collapse to):
+
+[source,sh]
+----
+docker run --rm -v "$PWD":/w -w /w \
+  ghcr.io/tamatebako/tpkg-builder-<triplet>@sha256:<digest> \
+  <your build command>
+----
+
+Local development: run as your own uid so emitted artifacts do not land
+root-owned — the cargo/vcpkg caches are world-writable for exactly this:
+
+[source,sh]
+----
+docker run --rm -v "$PWD":/w -w /w --user "$(id -u):$(id -g)" \
+  ghcr.io/tamatebako/tpkg-builder-<triplet>:v1 \
+  <your build command>
+----
+
+Notes:
+
+* Inside the musl image, build *without* `--target`: the container's host
+  triple is already the musl target, and an explicit `--target` would
+  strand host build scripts without the baked `RUSTFLAGS` (the bindgen
+  `crt-static` trap — tebako-rs run 30745532174).
+* gnu artifacts are gated on needing ≤ GLIBC 2.31 at image build time;
+  binaries produced in the image inherit the floor by construction.
+
+.Minimum glibc distribution versions for gnu-family artifacts
 [cols="3", options="header"]
 |===
 | Distribution | Minimal Supported Version | GLIBC Version
@@ -39,152 +144,28 @@ The `--patchelf` option enables the creation of packages that are forward-compat
 | Oracle Linux | 9 | GLIBC 2.34
 |===
 
-=== `alpine-3.17`
+== The publish pipeline
 
-This container is based on **Alpine Linux 3.17**, offering an environment for packaging applications for systems that use the https://musl.libc.org[`musl` implementation of the C standard library].
+link:.github/workflows/publish-builders.yml[`publish-builders.yml`]
+builds every leg on its native runner (no qemu on the publish path),
+gates the push on the full smoke — toolchain versions, the env contract,
+vcpkg baseline parity, `vcpkg list` on both baked trees, the glibc floor
+gate, and a probe crate cold-building the heaviest dependency
+(`dwarfs-t-sys`) against the baked tree — then pushes and re-verifies the
+published digest. A weekly refresh rebuilds with the layer cache busted
+so base-image and apt/apk drift is picked up; the pins never float.
 
-Both containers are available on the **Docker Hub** and **GitHub Container Registry (GHCR)** for **x86_64 (amd64)** and **aarch64 (arm64)** architectures, with multi-architecture manifests.
+Not yet: image signing/verification (cosign) is deferred; consumers pin
+digests, and the ecosystem's unsigned-first trust model applies.
 
-.Image contents (new build model)
-[NOTE]
-====
-The images follow the new tebako build model: a C++20 toolchain (LLVM-18 on
-Ubuntu, clang-15 on Alpine), cmake and ruby, the prebuilt libtfs/libtfs-deps
-packages, and the https://github.com/tamatebako/tebako-runtime-ruby[tebako-runtime-ruby]
-build tooling at `/opt/tebako-runtime-ruby` (pinned via `TEBAKO_RUNTIME_RUBY_REF`).
-A build-time warm-up runs `tools/build_runtime --ruby 3.3.7` end-to-end and
-seeds `/root/.build`, so `tools/build_runtime --prefix /root/.build` reuses
-the fetched dependencies. The **tebako gem is no longer preinstalled** — to
-package an application, `gem install tebako` first (the gem downloads
-prebuilt runtimes at press time); to build runtimes, call
-`/opt/tebako-runtime-ruby/tools/build_runtime` (or mount a
-tebako-runtime-ruby checkout and call `/mnt/w/tools/build_runtime`).
-====
+== The archived v1 images
 
-== Using the Tebako Containers
-
-=== General
-
-There are two primary methods for packaging with Tebako:
-
-1. **From outside the container**: Using Docker commands to package your application without entering the container.
-2. **From inside the container**: Interactively working within the container to package your application.
-
-=== Prerequisites
-
-- Docker installed on your machine.
-- A Ruby application ready for packaging.
-
-=== From Outside the Container
-
-You can package your application from outside the container by running a single Docker command. This command mounts your workspace into the container and executes the `tebako press` command, specifying:
-
-- Application root
-- Entry point
-- Output location
-- Ruby version
-
-[source,sh]
-----
-$ docker run -v <application_folder>:/mnt/w \
-  -t ghcr.io/tamatebako/tebako-${{ container_tag }}:latest \
-  tebako press <tebako press parameters>
-----
-
-or if you prefer Docker Hub
-[source,sh]
-----
-$ docker run -v <application_folder>:/mnt/w \
-  -t tebako/tebako-${{ container_tag }}:latest \
-  tebako press <tebako press parameters>
-----
-
-
-.Packaging the `fontist` Gem from Outside the Container
-[example]
-====
-To package the https://github.com/fontists/fontist[`fontist` gem], a Ruby application for managing fonts, located in the `fontist/` directory under the current working directory, use the following command:
-
-[source,sh]
-----
-docker run -v $PWD:/mnt/w \
-  -t ghcr.io/tamatebako/tebako-ubuntu-20.04:latest \
-  tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.3.7
-----
-
-or if you prefer Docker Hub
-[source,sh]
-----
-docker run -v $PWD:/mnt/w \
-  -t tebako/tebako-ubuntu-20.04:latest \
-  tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.3.7
-----
-====
-
-=== From Inside the Container
-
-To package your application from inside the Tebako container, follow these steps:
-
-1. Pull the Tebako container image:
-+
-[source,sh]
-----
-$ docker pull ghcr.io/tamatebako/tebako-<container_tag>:latest
-----
-+
-Replace `<container_tag>` with the desired container tag (e.g., `ubuntu-20.04` or `alpine-3.17`).
-
-2. Start and enter the container interactively:
-+
-[source,sh]
-----
-$ docker run -it --rm -v <application_folder>:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
-----
-+
-Replace `<container_tag>` with the appropriate tag and `<application_folder>` with the path to your application folder.
-
-3. Once inside the container, run the `tebako press` command:
-+
-[source,sh]
-----
-$ tebako press <tebako press parameters>
-----
-
-.Packaging the `fontist` Gem from Inside the Container
-[example]
-====
-To package the https://github.com/fontists/fontist[`fontist` gem], located in the `fontist/` directory under the current working directory, use the following commands:
-
-[source,sh]
-----
-# Start and enter the container
-$ docker run -it --rm -v $PWD:/mnt/w ghcr.io/tamatebako/tebako-<container_tag>:latest bash
-
-# Run this after entering the container
-$ tebako press --root=/mnt/w/fontist --entry-point=fontist --output=/mnt/w/fontist-package --Ruby=3.3.7
-----
-====
-
-`Gemspec` files often specify the files included in the gem using `git ls-files`. When packaging from inside the container, the container's instance of `git` will be used to resolve these files.
-
-If you use a mounted host directory for packaging, the container's instance of `git` won't be able to use it by default.
-To resolve this, you shall alter the container's configuration by running the following command before packaging:
-
-[source,sh]
-----
-git config --global --add safe.directory <source>
-----
-(Thanks to https://github.com/bradgessler[bradgessler] for suggestion)
-
-Packaging from inside the container is primarily designed to support CI environments like GitHub Actions (GHA) or Cirrus CI. It provides a complete packaging environment that
-does not require any additional installations, making it ideal for automated workflows.
-
-=== Samples
-
-* https://github.com/tamatebako/tebako-ci-containers/blob/main/.github/workflows/build-containers.yml[Tebako CI Containers GitHub Actions workflow]
-includes examples featuring packaging of fontist gem.
-* https://github.com/tamatebako/tebako-samples[Tebako samples repository] includes tutorial with basic Tebako CI containers examples and advanced workflows that show
-how to package Sinatra and Ruby on Rails applications.
+The `tebako-ubuntu-20.04` / `tebako-alpine-3.17` Dockerfiles and their
+`build-containers.yml` / `add-tag.yml` chain are archived under
+link:archive/v1/[`archive/v1/`]. Their published tags remain available;
+the runtime factory's container legs keep resolving them until the
+consumer rewiring (TODO.v2-1/13 steps 2–3) moves them onto
+`tpkg-builder-*`.
 
 == License
 
