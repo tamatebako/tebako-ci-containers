@@ -39,6 +39,11 @@
 # shared bake (tools/*.sh). The package list is the union of the release
 # script's and the archived v1 image's (the runtime factory's ruby build
 # links libacl.a/libjemalloc.a statically — keep the dev packages).
+# libgmp-dev is for ruby-install: its apt dependency list includes it
+# unconditionally for ruby > 2.1, and it auto-installs anything missing —
+# with the apt lists cleaned above, an unmet dep fails the build
+# ("Unable to locate package"); every ruby-install dep is preinstalled
+# here so its scan is a no-op.
 
 FROM ubuntu:20.04
 
@@ -68,7 +73,7 @@ RUN echo "$CACHEBUST" > /etc/tpkg-builder-build-stamp && \
       sudo make ruby \
       libbz2-dev \
       libffi-dev libgdbm-dev zlib1g-dev libyaml-dev libncurses-dev \
-      libreadline-dev libssl-dev libacl1-dev libjemalloc-dev && \
+      libreadline-dev libssl-dev libacl1-dev libjemalloc-dev libgmp-dev && \
     git config --system --add safe.directory '*' && \
     rm -rf /var/lib/apt/lists/*
 
