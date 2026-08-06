@@ -1,0 +1,239 @@
+# Copyright (c) 2026 [Ribose Inc](https://www.ribose.com).
+# All rights reserved.
+# This file is a part of the Tebako project.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+# publish-builders — build, smoke, and publish the tpkg-builder-<triplet>
+# family (TODO.v2-1/13).
+#
+# One image per (triplet × toolchain family), each on its NATIVE runner
+# (qemu is the documented fallback for arches without native runners,
+# never the publish path). Per-triplet ghcr repositories
+# (ghcr.io/tamatebako/tpkg-builder-<triplet>) sidestep the v1 images'
+# arch-suffixed-tag + manifest dance: every tag is unambiguous.
+#
+# Triggers:
+#   - push/PR touching the Dockerfiles, the bake tools, or this workflow
+#     (PRs build + smoke only — nothing is pushed)
+#   - a weekly refresh (Mon ~04:23 UTC) that busts the layer cache so
+#     base-image and apt/apk drift is picked up; the pins (rust, vcpkg
+#     baseline, product refs) do not float — they are pins.env's
+#   - workflow_dispatch (input fresh=true forces the same cache bust)
+#
+# Tags per publish: v1.<YYYY.MM.DD> (dated, immutable-by-convention),
+# v1 + latest (moving), sha-<shortsha>. Consumers sha-pin via the digest
+# printed to the run summary (…@sha256:…).
+#
+# Deferred (noted in the README): image signing/verification. Unsigned
+# stays first-class per the ecosystem's trust model; cosign slots into
+# the push step later without restructuring.
+
+name: publish-builders
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tpkg-builder/**'
+      - '.github/workflows/publish-builders.yml'
+  pull_request:
+    paths:
+      - 'tpkg-builder/**'
+      - '.github/workflows/publish-builders.yml'
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      fresh:
+        description: 'Bust the layer cache (full rebuild, like the weekly refresh)'
+        type: boolean
+        default: false
+
+# One run per branch/PR-head at a time: a re-run cancels the stale one.
+# The moving tags (v1, latest) are only ever written from main/schedule/
+# dispatch runs, which this serializes per ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: tpkg-builder-${{ matrix.triplet }}
+    runs-on: ${{ matrix.host }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - family: linux-gnu
+            host: ubuntu-24.04
+            platform: linux/amd64
+            triplet: x86_64-linux-gnu
+            vcpkg_triplet: x64-linux-static
+            rust_target: x86_64-unknown-linux-gnu
+          - family: linux-gnu
+            host: ubuntu-24.04-arm
+            platform: linux/arm64
+            triplet: aarch64-linux-gnu
+            vcpkg_triplet: arm64-linux-static
+            rust_target: aarch64-unknown-linux-gnu
+          - family: linux-musl
+            host: ubuntu-24.04
+            platform: linux/amd64
+            triplet: x86_64-linux-musl
+            vcpkg_triplet: x64-linux-musl
+            rust_target: x86_64-unknown-linux-musl
+          - family: linux-musl
+            host: ubuntu-24.04-arm
+            platform: linux/arm64
+            triplet: aarch64-linux-musl
+            vcpkg_triplet: arm64-linux-musl
+            rust_target: aarch64-unknown-linux-musl
+    env:
+      IMAGE: ghcr.io/tamatebako/tpkg-builder-${{ matrix.triplet }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: tamatebako
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Base-image pulls come from Docker Hub; the login dodges the
+      # anonymous rate limit (the v1 workflow did the same).
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: tebako
+          password: ${{ secrets.TEBAKO_CI_DOCKER_HUB_PAT }}
+
+      - name: Compute tags
+        id: meta
+        run: |
+          set -euo pipefail
+          DATE=$(date -u +%Y.%m.%d)
+          SHORT=$(git rev-parse --short HEAD)
+          CACHEBUST=0
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.fresh }}" = "true" ]; then
+            CACHEBUST=$DATE
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            TAGS="$IMAGE:pr-${{ github.event.pull_request.number }}"
+          else
+            TAGS="$IMAGE:v1.$DATE,$IMAGE:v1,$IMAGE:latest,$IMAGE:sha-$SHORT"
+          fi
+          # The pre-push smoke runs the first tag of the set.
+          echo "smoke_tag=$(echo "$TAGS" | cut -d, -f1)" >> "$GITHUB_OUTPUT"
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "cachebust=$CACHEBUST" >> "$GITHUB_OUTPUT"
+
+      - name: Build (load for the smoke gate)
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ./tpkg-builder/${{ matrix.family }}.Dockerfile
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            TPKB_TRIPLET=${{ matrix.triplet }}
+            VCPKG_TRIPLET=${{ matrix.vcpkg_triplet }}
+            RUST_TARGET=${{ matrix.rust_target }}
+            CACHEBUST=${{ steps.meta.outputs.cachebust }}
+          cache-from: type=gha,scope=tpkg-builder-${{ matrix.triplet }}
+          cache-to: type=gha,mode=max,scope=tpkg-builder-${{ matrix.triplet }}
+          labels: |
+            org.opencontainers.image.vendor=Ribose Inc.
+            org.opencontainers.image.licenses=BSD-2-Clause
+            org.opencontainers.image.documentation=https://www.tamatebako.org
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.description=Tebako tpkg builder image (${{ matrix.triplet }})
+
+      # The proof (TODO.v2-1/13 step 1): toolchain versions, the env
+      # contract, the vcpkg baseline parity gate, `vcpkg list` on both
+      # baked trees, the baked binaries running, the glibc floor gate
+      # (gnu), and the probe crate — a cold cargo build against the
+      # heaviest dependency (dwarfs-t-sys) reusing the baked tree.
+      # Nothing is pushed unless this passes.
+      - name: Smoke the built image
+        run: |
+          docker run --rm "${{ steps.meta.outputs.smoke_tag }}" \
+            /opt/tpkg-builder/tools/smoke.sh
+
+      - name: Push
+        if: github.event_name != 'pull_request'
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ./tpkg-builder/${{ matrix.family }}.Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            TPKB_TRIPLET=${{ matrix.triplet }}
+            VCPKG_TRIPLET=${{ matrix.vcpkg_triplet }}
+            RUST_TARGET=${{ matrix.rust_target }}
+            CACHEBUST=${{ steps.meta.outputs.cachebust }}
+          cache-from: type=gha,scope=tpkg-builder-${{ matrix.triplet }}
+          labels: |
+            org.opencontainers.image.vendor=Ribose Inc.
+            org.opencontainers.image.licenses=BSD-2-Clause
+            org.opencontainers.image.documentation=https://www.tamatebako.org
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.description=Tebako tpkg builder image (${{ matrix.triplet }})
+
+      # Prove the PUBLISHED artifact (pull by digest — the exact reference
+      # consumers sha-pin), not just the local layers.
+      - name: Verify the published digest
+        if: github.event_name != 'pull_request'
+        run: |
+          docker pull "$IMAGE@${{ steps.push.outputs.digest }}"
+          docker run --rm "$IMAGE@${{ steps.push.outputs.digest }}" \
+            /opt/tpkg-builder/tools/smoke.sh --light
+
+      - name: Publish summary
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "### tpkg-builder-${{ matrix.triplet }}"
+            echo
+            echo "| reference | value |"
+            echo "|---|---|"
+            echo "| digest (sha-pin this) | \`$IMAGE@${{ steps.push.outputs.digest }}\` |"
+            echo "| tags | $(echo "${{ steps.meta.outputs.tags }}" | sed "s|$IMAGE:||g; s|,|, |g") |"
+          } >> "$GITHUB_STEP_SUMMARY"
