@@ -109,7 +109,8 @@ ENV TPKB_FAMILY=linux-musl \
     DWARFS_RS_VCPKG_TRIPLET=$VCPKG_TRIPLET \
     SQFS_SYS_VCPKG_INSTALLED_DIR=/opt/vcpkg-installed/sqfs/$VCPKG_TRIPLET \
     SQFS_SYS_VCPKG_TRIPLET=$VCPKG_TRIPLET \
-    VCPKG_TRIPLET=$VCPKG_TRIPLET
+    VCPKG_TRIPLET=$VCPKG_TRIPLET \
+    RUST_TARGET=$RUST_TARGET
 
 # The bake: pinned rust (+musl host target by construction), vcpkg at the
 # baseline, the overlay triplets + installed trees, the product binaries,

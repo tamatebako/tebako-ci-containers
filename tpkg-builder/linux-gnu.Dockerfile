@@ -167,6 +167,7 @@ ENV TPKB_FAMILY=linux-gnu \
     SQFS_SYS_VCPKG_INSTALLED_DIR=/opt/vcpkg-installed/sqfs/$VCPKG_TRIPLET \
     SQFS_SYS_VCPKG_TRIPLET=$VCPKG_TRIPLET \
     VCPKG_TRIPLET=$VCPKG_TRIPLET \
+    RUST_TARGET=$RUST_TARGET \
     LIBCLANG_PATH=/usr/lib/llvm-19/lib \
     CFLAGS=-pthread \
     CXXFLAGS=-pthread
