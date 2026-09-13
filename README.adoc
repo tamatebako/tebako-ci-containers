@@ -4,10 +4,10 @@ One builder image per (triplet × toolchain family), produced by this one
 repo, sha-pinnable, consumed by every slice-producing repo in the tebako
 v2 ecosystem (the runtime factory, the feedstocks, the crypto payload) —
 and by third-party developers building their own `.tfs` slices with zero
-tebako-side toolchain knowledge (TODO.v2-1/13).
+tebako-side toolchain knowledge.
 
 The target shape of a slice build — one primitive, identical on a
-developer laptop and in GHA (TODO.v2-1/13):
+developer laptop and in GHA:
 
 [source,sh]
 ----
@@ -61,7 +61,7 @@ GHA cannot run Windows containers that match our native PE/ucrt64 build,
 and macOS containers do not exist at all. Their provisioning is already
 hermetic in practice (the vcpkg baseline restore + a closed PATH), so
 their lever is caching, not containers. This is the documented exception,
-not a gap (TODO.v2-1/13 "The model").
+not a gap.
 
 == What is baked
 
@@ -127,7 +127,7 @@ Notes:
 * Inside the musl image, build *without* `--target`: the container's host
   triple is already the musl target, and an explicit `--target` would
   strand host build scripts without the baked `RUSTFLAGS` (the bindgen
-  `crt-static` trap — tebako-rs run 30745532174).
+  `crt-static` trap).
 * gnu artifacts are gated on needing ≤ GLIBC 2.31 at image build time;
   binaries produced in the image inherit the floor by construction.
 
@@ -163,9 +163,7 @@ digests, and the ecosystem's unsigned-first trust model applies.
 The `tebako-ubuntu-20.04` / `tebako-alpine-3.17` Dockerfiles and their
 `build-containers.yml` / `add-tag.yml` chain are archived under
 link:archive/v1/[`archive/v1/`]. Their published tags remain available;
-the runtime factory's container legs keep resolving them until the
-consumer rewiring (TODO.v2-1/13 steps 2–3) moves them onto
-`tpkg-builder-*`.
+consumers are moving onto `tpkg-builder-*`.
 
 == License
 
