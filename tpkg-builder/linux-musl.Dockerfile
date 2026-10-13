@@ -79,8 +79,15 @@ RUN echo "$CACHEBUST" > /etc/tpkg-builder-build-stamp && \
       readline-dev readline-static zlib-dev zlib-static \
       openssl-dev openssl-libs-static lz4-dev lz4-static \
       xz xz-dev xz-static brotli-dev brotli-static \
-      libxslt-dev libxslt-static jemalloc-dev gettext-dev gperf p7zip && \
+      libxslt-dev libxslt-static jemalloc-dev gettext-dev gperf p7zip \
+      fontconfig ttf-dejavu && \
     git config --system --add safe.directory '*'
+# fontconfig + ttf-dejavu: in-container payload compile acceptances run
+# the FULL font pipeline (fontist downloads + mn2pdf/FOP rendering) —
+# FOP's font enumeration dies on a fontconfig-less box
+# ("Fontconfig head is null", the packed-metanorma musl leg evidence);
+# DejaVu is the minimal system font that satisfies it (the real document
+# fonts are fontist-downloaded at compile time).
 # clang19-libclang: bindgen (rnp-rs's build.rs) dlopens libclang.so at
 # build time; only the versioned libclang package ships it on alpine.
 # clang19 (the compiler) rides along for consumers that opt into
