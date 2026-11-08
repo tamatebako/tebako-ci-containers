@@ -79,7 +79,7 @@ RUN echo "$CACHEBUST" > /etc/tpkg-builder-build-stamp && \
       readline-dev readline-static zlib-dev zlib-static \
       openssl-dev openssl-libs-static lz4-dev lz4-static \
       xz xz-dev xz-static brotli-dev brotli-static \
-      libxslt-dev libxslt-static jemalloc-dev gettext-dev gperf p7zip \
+      libxslt-dev libxslt-static jemalloc-dev gettext-dev gettext-static gperf p7zip \
       fontconfig ttf-dejavu && \
     git config --system --add safe.directory '*'
 # fontconfig + ttf-dejavu: in-container payload compile acceptances run
